@@ -15,8 +15,8 @@ A solo entrepreneur building privacy-first, guardrail-first applications. Every 
 - Avoid re-reading files already in context; trust tool results instead of re-verifying by hand.
 - Use Plan Mode before large or ambiguous changes rather than iterating live.
 
-## Stage-gates (placeholder — Phase 2)
-A hard-block release gate (`/ship` + a privacy/security review pair) is planned but not yet built. Until it exists, treat `docs/RELEASE_CHECKLIST.md` in each project as an honor-system checklist, not an enforced one.
+## Stage-gates (enforced)
+Before any recognizable publish/deploy/release command runs in a project here, the `release_gate.py` `PreToolUse` hook checks `<project>/.harness/gates.json` for a `privacy_guardrails_review` pass tied to the *current* git commit — a stale pass (from before newer commits) doesn't count. Run the `privacy-guardrails-review` skill (directly, or via `launch-checklist` / `/ship`) to record a pass. This is a mechanical block, not advice — it can't be talked around by the model, only by an honest passing review.
 
 ## Where this harness lives
 Source of truth: `~/Documents/Projects/_harness/` (a local git repo). It's symlinked into `~/.claude/{skills,agents,commands,settings.json}` and this file is symlinked to `~/Documents/Projects/CLAUDE.md`. To extend the harness (new skill, agent, command, or hook), edit the files in `_harness/` directly — don't edit the symlink targets in `~/.claude/`.

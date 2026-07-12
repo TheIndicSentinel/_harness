@@ -1,6 +1,6 @@
 # {{PROJECT_NAME}} — Release Checklist
 
-Honor-system for now (see `~/Documents/Projects/CLAUDE.md` — hard-block gate enforcement is Phase 2 of the harness, not yet wired up).
+Run `/ship` (or the `launch-checklist` skill directly) to walk this end to end. The privacy/guardrails item below is mechanically enforced — see `~/Documents/Projects/CLAUDE.md` — a real publish/deploy/release command will be blocked until it passes for the current commit.
 
 ## Before shipping
 - [ ] Privacy review — data collected matches what's disclosed to the user, nothing extra

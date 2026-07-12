@@ -9,6 +9,15 @@
             "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/secrets_guard.py"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/release_gate.py"
+          }
+        ]
       }
     ],
     "Stop": [
