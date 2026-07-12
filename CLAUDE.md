@@ -18,5 +18,8 @@ A solo entrepreneur building privacy-first, guardrail-first applications. Every 
 ## Stage-gates (enforced)
 Before any recognizable publish/deploy/release command runs in a project here, the `release_gate.py` `PreToolUse` hook checks `<project>/.harness/gates.json` for a `privacy_guardrails_review` pass tied to the *current* git commit — a stale pass (from before newer commits) doesn't count. Run the `privacy-guardrails-review` skill (directly, or via `launch-checklist` / `/ship`) to record a pass. This is a mechanical block, not advice — it can't be talked around by the model, only by an honest passing review.
 
+## Existing projects (not scaffolded by `/new-project`)
+A project that predates the harness (or was created some other way) still gets the umbrella rules and hooks above for free — they're not tied to scaffolding. It just won't have the standard `docs/` set yet. Run `/adopt-project` once to fill in whatever's missing (`docs/PRD.md`, `docs/MARKETING.md`, `docs/COST_LOG.md`, `docs/RELEASE_CHECKLIST.md`) — it only creates files that don't already exist and never touches the project's own `CLAUDE.md` or an existing checklist.
+
 ## Where this harness lives
 Source of truth: `~/Documents/Projects/_harness/` (a local git repo). It's symlinked into `~/.claude/{skills,agents,commands,settings.json}` and this file is symlinked to `~/Documents/Projects/CLAUDE.md`. To extend the harness (new skill, agent, command, or hook), edit the files in `_harness/` directly — don't edit the symlink targets in `~/.claude/`.
