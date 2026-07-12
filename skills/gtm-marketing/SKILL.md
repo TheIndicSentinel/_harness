@@ -15,3 +15,9 @@ description: Builds out positioning, launch channels, and messaging in docs/MARK
    - **Post-launch**: how feedback gets gathered and acted on.
 3. Draft actual launch copy if asked (a Product Hunt blurb, a launch tweet/post, a landing page pitch) — short, concrete, no marketing-speak filler.
 4. Don't overclaim. If the product doesn't have a real privacy/security differentiator yet (e.g. it does collect data it shouldn't), don't market it as privacy-first — flag the mismatch back to the user instead of writing copy that isn't true.
+
+## Example
+
+**Input:** "Write a launch tweet for the offline mandi price app."
+
+**Output:** "Built for farmers who don't have reliable signal, not the ones who do. [App] checks mandi prices fully offline — no account, no location tracking, no data leaving your phone. Because the app that needs 4 bars to tell you today's price isn't actually built for the people who need it most."

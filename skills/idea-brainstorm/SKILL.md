@@ -18,5 +18,11 @@ You're helping a solo entrepreneur who builds privacy-first, guardrail-first app
 3. **Converge.** Once the axes above have real answers, summarize the idea back in 3-4 sentences and ask if it's a fair restatement.
 4. **Next step.** If the idea holds up, suggest one of: `market-research` (if competitive/demand signal is the open question), `prd-writer` (if the shape is clear enough to spec), or `/new-project <name> "<one-line idea>"` (if it's ready to become a real project directory).
 
+## Example
+
+**Input:** "I want to build something for farmers to check crop prices."
+
+**Output (converged restatement, after the questioning):** "A voice-first, offline app for smallholder farmers in [specific region] to check mandi prices for their specific crops without needing continuous data connectivity — the gap being that existing price apps assume steady internet and text literacy, both unreliable assumptions for this user. Privacy angle: no location tracking needed beyond a one-time district selection, no account/phone-number requirement. Does this match what you're picturing?"
+
 ## What this skill is not
 Don't write a PRD here — that's `prd-writer`. Don't do web research here — that's `market-research`. Keep this conversational and fast; a brainstorm that takes longer than the idea deserves is a smell.

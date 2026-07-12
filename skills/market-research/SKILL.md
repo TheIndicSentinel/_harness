@@ -17,5 +17,11 @@ Delegate the actual searching to the `market-researcher` subagent (read-only: We
    - Otherwise create `docs/RESEARCH.md` with the synthesis (competitor table, demand signals, sourced links, and the recommended opening/positioning).
 5. Summarize back to the user in a few sentences — don't just say "done, see the file." Call out the single most important finding (e.g. "all three competitors are cloud-only, which is your opening if you go offline-first").
 
+## Example
+
+**Input:** "Research the market for an offline mandi price checker."
+
+**Output (synthesis handed back to the user, not the raw subagent dump):** "3 direct competitors, all requiring continuous internet and a phone-number account (AgriApp, Kisan Suvidha, DeHaat's price module) — every one of them has App Store reviews complaining about connectivity failures in low-signal areas. That's the opening: none of them work offline. No competitor found handling this without an account. Full table and sources in docs/RESEARCH.md."
+
 ## When there's no project yet
 If this idea hasn't been scaffolded with `/new-project` yet, still run the research, but hold the findings in the conversation and suggest `/new-project` once research supports building — don't create files with nowhere to live.

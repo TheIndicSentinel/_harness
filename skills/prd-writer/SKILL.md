@@ -15,3 +15,9 @@ Every project scaffolded by `/new-project` already has a `docs/PRD.md` skeleton 
 4. The "Privacy & guardrails considerations" section is not optional filler — this is a standing requirement of every project in this harness (see `~/Documents/Projects/CLAUDE.md`). Name the actual data touched and the minimum needed, even if the answer is "none."
 5. Leave genuinely open questions in "Open questions" rather than inventing answers to sound complete.
 6. Show the filled PRD back to the user for a quick sanity check before considering it done — this document will get referenced by `market-research`, `launch-checklist`, and `privacy-guardrails-review` later, so it's worth getting right once.
+
+## Example
+
+**Weak (push back on this):** "Success criteria: people like it and find it useful."
+
+**Good (checkable):** "Success criteria: 100 farmers in the pilot district complete at least one price check per week for 4 consecutive weeks, with under 5% reporting the offline sync as unreliable in in-app feedback."
