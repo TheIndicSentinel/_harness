@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/secrets_guard.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/session_log.py"
+          }
+        ]
+      }
+    ]
+  }
+}
