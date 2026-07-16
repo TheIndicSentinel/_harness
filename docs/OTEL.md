@@ -24,5 +24,8 @@ export OTEL_METRICS_EXPORTER=console        # prints metrics to stderr — simpl
 - **Replaces:** the "best-effort estimate" caveat on token counts — OTel's `claude_code.token.usage` and `claude_code.cost.usage` metrics are authoritative.
 - **Does NOT replace:** the per-project `docs/COST_LOG.md` rollup that `/cost-report` reads. OTel metrics aren't natively scoped to "which harness project" the way this harness's own directory-based tracking is — turning OTel on gives you a second, more accurate source to cross-check against, not a drop-in replacement for `/cost-report`. Keep `session_log.py` running either way.
 
+## An even more authoritative option: the Anthropic Admin API
+If you use Claude Code (or the Anthropic API directly) under an organization/workspace with Console admin access, Anthropic's Admin API usage report is more authoritative than either OTel or `session_log.py` — it's billing-system-derived, broken down by workspace, API key, model, and service tier, not client-side telemetry. This harness doesn't integrate with it (no admin/org credentials to build or test against, and this harness governs Claude Code usage only — see the README's scope section), but if you have that access, it's the number to trust over anything in this file. Check Anthropic's Console documentation for current endpoint details.
+
 ## Reference
 Full environment variable list and metric names: run `claude --help` or see Claude Code's own telemetry documentation — this file intentionally doesn't duplicate the full spec, since that's Anthropic's to keep current, not this harness's.

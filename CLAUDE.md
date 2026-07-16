@@ -5,6 +5,9 @@ This file loads automatically for every project under `~/Documents/Projects/` (C
 ## Who's building this
 A solo entrepreneur building privacy-first, guardrail-first applications. Every product decision defaults toward less data collection and more user control, not more.
 
+## Scope of this harness
+This governs **Claude Code usage only** — skills, commands, hooks, and locally-tracked project docs. It has no reach into and makes no claims about the Anthropic Messages API/SDK, Bedrock/Vertex, Claude.ai, Claude Desktop, other Anthropic surfaces, or MCP connectors used outside Claude Code. Don't describe it, in conversation with the user or in generated docs, as broader than that — if a request implies governing one of those other surfaces, say so explicitly rather than silently answering as if this harness already covers it.
+
 ## Non-negotiable defaults (apply to every project here, unless that project's own CLAUDE.md overrides for a stated reason)
 - **Privacy-by-default.** No telemetry, analytics, or data collection beyond what a feature explicitly requires. If you're about to add a new data-collecting call (logging, crash reporting, network calls), pause and confirm it's actually needed before wiring it up silently.
 - **Guardrails-first.** Safety/abuse checks are part of the feature, not a follow-up. Don't ship a user-facing input path (chat, upload, form) without at least basic validation and a guardrail review before it's called "done."

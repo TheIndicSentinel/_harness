@@ -2,6 +2,10 @@
 
 Filled/reviewed by the `compliance-review` skill. This is the disclosure-and-obligation record; the code-level privacy check is `privacy-guardrails-review` (separate, mechanically gated). Mark items N/A with a one-line reason rather than deleting them.
 
+## Risk tier
+One line, picked once and revisited if the product changes shape — not a formal profile system, just enough to calibrate how much rigor the rest of this document needs.
+- **Tier:** consumer / startup / regulated — default **consumer** for an indie app with no PII beyond what's disclosed above, no B2B/enterprise customers, and no regulated-industry data (health, finance, children's data under 13/16). Bump to **regulated** and treat every section above with real rigor if any of those apply.
+
 ## Privacy policy
 - **File / URL:** (e.g. docs/PRIVACY_POLICY.md — required before any store listing)
 - **Last verified against actual code behavior:** (date + commit)

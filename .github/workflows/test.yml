@@ -1,0 +1,33 @@
+name: Test harness hooks
+
+# Regression coverage for the harness's own hook logic (gate_lib, release_gate,
+# secrets_guard, budget_lib, the CI gate-check template) — added after a
+# sibling-folder path-prefix bug shipped once already and was only caught by
+# manual testing. Runs on every push/PR so a future change to this logic gets
+# checked automatically instead of relying on manual re-verification.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Configure git identity (needed by tests that create commits)
+        run: |
+          git config --global user.email "harness-ci@example.com"
+          git config --global user.name "harness-ci"
+
+      - name: Install test dependencies
+        run: pip install pytest
+
+      - name: Run tests
+        run: pytest -v

@@ -1,6 +1,9 @@
 # Solo-Founder Harness
 
-A full-lifecycle Claude Code harness for solo/indie founders building privacy-first, guardrail-first software — idea through sunset, with a release gate that's mechanically enforced, not just advice.
+A full-lifecycle **Claude Code** harness for solo/indie founders building privacy-first, guardrail-first software — idea through sunset, with a release gate that's mechanically enforced, not just advice.
+
+## Scope (read this before assuming more than it does)
+This is a **Claude Code solo-founder project harness** — not a general Anthropic governance, monitoring, or token-accounting platform. It has no visibility into and does not govern: the Messages API used directly or via an SDK, Bedrock/Vertex, Claude.ai (web/subscription), Claude Desktop, Claude for Sheets, other extensions, or MCP connectors used outside Claude Code. Its release gate (`release_gate.py`) only sees Bash commands and MCP tool calls made *through Claude Code* — it cannot see or block a deploy triggered any other way. If you build a product that calls the Anthropic API directly, or operate in an organization with multiple engineers, most of this harness's assumptions (one operator, one machine, git as the audit trail) stop holding and a different design is warranted.
 
 Covers: idea validation, market research, PRD writing, QA, legal/compliance, release notes, launch checklists, incident response, support triage, pricing, weekly portfolio review, and end-of-life — each backed by a Claude Code skill, and the ship-blocking gate backed by an actual `PreToolUse` hook, not a prompt someone can talk past.
 
@@ -27,7 +30,7 @@ Then run `/harness-init` once — a plugin install doesn't auto-load an always-o
 | Program mgmt | `weekly-review` / `/weekly-review` |
 | Scaffolding | `/new-project`, `/adopt-project`, `/harness-status`, `/sunset-project` |
 
-Every project gets a standard `docs/` set (PRD, MARKETING, ROADMAP, CHANGELOG, OPERATIONS, BUSINESS, COMPLIANCE, RELEASE_CHECKLIST, COST_LOG) scaffolded from `templates/new-project/`.
+Every project gets a standard `docs/` set (PRD, MARKETING, ROADMAP, CHANGELOG, OPERATIONS, BUSINESS, COMPLIANCE, CONNECTORS, RELEASE_CHECKLIST, COST_LOG) scaffolded from `templates/new-project/`.
 
 ## The release gate (the actual point of this harness)
 
@@ -38,6 +41,12 @@ python3 hooks/gate_write.py <project_root> --require qa_review,compliance_review
 ```
 
 A stale pass (from before newer commits) doesn't count. This can't be talked around by the model — only by an honest passing review.
+
+This local hook is a fast nudge, not a trust boundary — it only sees actions taken *through Claude Code*. For projects releasing via GitHub Actions, `templates/new-project/.github/workflows/harness-gate-check.yml` adds a real CI-side check on the same gate records; see [`docs/CI_GATE_CHECK.md`](docs/CI_GATE_CHECK.md) for the convention and wiring.
+
+## Token budgets (optional)
+
+`python3 hooks/budget_write.py <project_root> <monthly_token_budget>` sets a best-effort monthly token budget per project, computed from `COST_LOG.md`. `/harness-status` shows the current percentage, and a SessionStart alert fires once usage crosses 50/80/100%. Same caveat as the rest of `COST_LOG.md`: an estimate, not authoritative billing — see [`docs/OTEL.md`](docs/OTEL.md).
 
 ## Configuration
 

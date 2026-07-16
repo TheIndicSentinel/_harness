@@ -10,6 +10,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "hooks"))
+from budget_lib import alert_threshold_crossed, budget_status  # noqa: E402
 from gate_lib import (  # noqa: E402
     REQUIRED_GATES_KEY,
     check_passing,
@@ -30,6 +31,7 @@ DOC_FILES = [
     "OPERATIONS.md",
     "BUSINESS.md",
     "COMPLIANCE.md",
+    "CONNECTORS.md",
 ]
 
 
@@ -106,6 +108,17 @@ def git_state(project_root):
     return "clean" if dirty == 0 else f"{dirty} uncommitted change(s)"
 
 
+def budget_cell(project_root):
+    status = budget_status(project_root)
+    if status is None:
+        return "not set"
+    used, budget, pct = status
+    label = f"{pct}%"
+    if alert_threshold_crossed(pct) is not None:
+        label += "!"
+    return label
+
+
 def summary_row(name):
     project_root = os.path.join(PROJECTS_ROOT, name)
     docs = docs_state(project_root)
@@ -113,12 +126,13 @@ def summary_row(name):
     gates = gates_summary(project_root)
     sessions = session_count(project_root)
     git = git_state(project_root)
-    return name, adopted, gates, str(sessions), git
+    budget = budget_cell(project_root)
+    return name, adopted, gates, str(sessions), budget, git
 
 
 def print_table(names):
     rows = [summary_row(n) for n in names]
-    headers = ["Project", "Docs", "Required gates", "Sessions", "Git"]
+    headers = ["Project", "Docs", "Required gates", "Sessions", "Budget", "Git"]
     widths = [max(len(h), *(len(r[i]) for r in rows)) if rows else len(h) for i, h in enumerate(headers)]
     def fmt_row(r):
         return "  ".join(c.ljust(w) for c, w in zip(r, widths))
@@ -159,6 +173,14 @@ def print_detail(name):
     print(f"  current HEAD: {current_commit(project_root)}")
     print()
     print(f"sessions logged: {session_count(project_root)}")
+    status = budget_status(project_root)
+    if status is None:
+        print("monthly token budget: not set (python3 hooks/budget_write.py <project_root> <tokens>)")
+    else:
+        used, budget, pct = status
+        crossed = alert_threshold_crossed(pct)
+        flag = f"  [ALERT: crossed {crossed}%]" if crossed else ""
+        print(f"monthly token budget: {used}/{budget} ({pct}%){flag} — best-effort, see docs/OTEL.md for authoritative")
 
 
 def main():

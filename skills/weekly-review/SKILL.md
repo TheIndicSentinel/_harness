@@ -15,7 +15,7 @@ The program-management layer for a solo founder: one deliberate pass instead of 
    - **Success-criteria check** (post-launch projects): fill a row in the ROADMAP table against the PRD's criteria, with real evidence — user reports, sales, store stats — not vibes.
    - **Risk register:** any "Review by" dates due? Re-accept, mitigate, or close each.
    - **Docs-freshness spot check:** skim the project `CLAUDE.md` stack/gotchas against reality (one targeted question — "is Firebase still listed but gone?" — not a re-read of the codebase). Stale claims get fixed now; they're cheap now and expensive mid-incident.
-   - `COST_LOG.md` anomalies: a project quietly eating tokens is a signal.
+   - `COST_LOG.md` anomalies: a project quietly eating tokens is a signal. If a monthly budget is set (`harness-status` shows it), note whether it's on track. If a release happened this period, consider filling in `COST_LOG.md`'s "Cost per useful outcome" row — optional, manual, only worth doing when there's a real outcome to attach a number to.
 3. **Cross-project decision.** End with one explicit priority call: which project gets the coming week's focus and why — trade-offs stated, not implied. Log it in that project's ROADMAP "Now".
 4. Durable strategy shifts (pausing a project, killing an idea, pivoting) go to project memory; suggest `/sunset-project` when a project is actually done rather than letting it decay.
 

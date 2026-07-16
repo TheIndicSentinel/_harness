@@ -1,0 +1,25 @@
+name: Harness Release Gate Check
+
+# Reusable workflow — a no-op until another workflow calls it via `needs:`.
+# Blocks a release job unless the harness's required gates
+# (.harness/gates.json) show a pass for the commit being built. This is the
+# CI-side trust boundary: the local Claude Code PreToolUse hook is a fast
+# local nudge that can be bypassed by running commands outside Claude Code;
+# this workflow runs on GitHub's infra and can't be.
+#
+# Wiring instructions and the "commit the gate record" convention this
+# depends on: see docs/CI_GATE_CHECK.md in the harness root.
+
+on:
+  workflow_call:
+
+jobs:
+  gate-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # need HEAD~1 for the "bookkeeping commit" case
+
+      - name: Verify required harness gates pass for this commit
+        run: python3 .github/workflows/harness_gate_check.py
