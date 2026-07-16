@@ -40,13 +40,13 @@ Every project gets a standard `docs/` set (PRD, MARKETING, ROADMAP, CHANGELOG, O
 python3 hooks/gate_write.py <project_root> --require qa_review,compliance_review
 ```
 
-A stale pass (from before newer commits) doesn't count. This can't be talked around by the model — only by an honest passing review.
+A stale pass (from before newer commits) doesn't count, and neither does a dirty working tree — a passing gate only vouches for the reviewed commit's *committed* content, and a build reads the filesystem, not git HEAD, so uncommitted local edits on top of a passing commit block too. This can't be talked around by the model — only by an honest passing review.
 
-This local hook is a fast nudge, not a trust boundary — it only sees actions taken *through Claude Code*. For projects releasing via GitHub Actions, `templates/new-project/.github/workflows/harness-gate-check.yml` adds a real CI-side check on the same gate records; see [`docs/CI_GATE_CHECK.md`](docs/CI_GATE_CHECK.md) for the convention and wiring.
+This local hook is a fast nudge, not a trust boundary — it only sees actions taken *through Claude Code*, and it's self-attested (nothing stops a hand-written `"status": "pass"` from satisfying it). For projects releasing via GitHub Actions, `templates/new-project/.github/workflows/harness-gate-check.yml` adds a real CI-side check on the same gate records, and required-status-check branch protection makes that check unskippable even for a solo maintainer; see [`docs/CI_GATE_CHECK.md`](docs/CI_GATE_CHECK.md) for the convention, the wiring, and the honest limits of self-attestation.
 
 ## Token budgets (optional)
 
-`python3 hooks/budget_write.py <project_root> <monthly_token_budget>` sets a best-effort monthly token budget per project, computed from `COST_LOG.md`. `/harness-status` shows the current percentage, and a SessionStart alert fires once usage crosses 50/80/100%. Same caveat as the rest of `COST_LOG.md`: an estimate, not authoritative billing — see [`docs/OTEL.md`](docs/OTEL.md).
+`python3 hooks/budget_write.py <project_root> <monthly_token_budget>` sets a best-effort monthly token budget per project, computed from `COST_LOG.md`. `/harness-status` always shows the current live percentage; a SessionStart alert fires once per threshold crossed (50/80/100%) per calendar month, not every session after crossing — it's a nudge, not a spend-prevention mechanism (nothing can stop a session mid-flight, and this doesn't see API/subscription/Claude.ai usage at all). Same caveat as the rest of `COST_LOG.md`: an estimate, not authoritative billing — see [`docs/OTEL.md`](docs/OTEL.md) for the full source ranking.
 
 ## Configuration
 
@@ -60,6 +60,8 @@ Privacy-by-default and guardrails-first aren't features here — they're default
 ## Development
 
 Source of truth for this plugin is this repo. The same content also installs via a local symlink setup (see `CLAUDE.md`'s "Where this harness lives") for the original single-machine use case — both paths are kept working; new content should use `"${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}"` in any Bash command so it resolves correctly under either.
+
+**`settings.json` is the original symlink install's config, not something to copy verbatim.** Its `permissions.allow` list has this machine's absolute paths hardcoded (`/Users/.../​_harness/...`) — that's fine for the one machine it's symlinked on, but it isn't portable, and it's deliberately *not* what other developers get: a plugin install uses `hooks/hooks.json` instead (which correctly uses `$CLAUDE_PLUGIN_ROOT`) and normal Claude Code permission prompts, not this file. If you fork the symlink-install approach for your own machine, expect to edit these three paths to match your own username/home directory.
 
 ## License
 

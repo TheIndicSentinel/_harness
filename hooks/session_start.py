@@ -12,7 +12,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from budget_lib import alert_threshold_crossed, budget_status  # noqa: E402
+from budget_lib import alert_threshold_crossed, budget_status, record_alert, should_alert  # noqa: E402
 from gate_lib import check_passing, load_gates, project_root_for, required_gates  # noqa: E402
 
 MAX_NOW_ITEMS = 3
@@ -76,8 +76,12 @@ def main() -> int:
         if status is not None:
             used, budget, pct = status
             crossed = alert_threshold_crossed(pct)
-            if crossed is not None:
+            # Fire once per threshold per month, not every session -- a
+            # SessionStart hook runs unprompted every time, so re-printing
+            # the same crossing indefinitely would be noise, not signal.
+            if crossed is not None and should_alert(project_root, crossed):
                 lines.append(f"[harness] token budget ALERT — {used}/{budget} ({pct}%, crossed {crossed}% threshold)")
+                record_alert(project_root, crossed)
         if lines:
             print("\n".join(lines))
     except Exception:

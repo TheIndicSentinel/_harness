@@ -23,6 +23,12 @@ Coverage and known boundaries (documented deliberately):
 - Fail-mode: infrastructure errors (unreadable payload) fail OPEN so a hook bug
   can't brick every Bash call; the gate check itself fails CLOSED (missing or
   stale record blocks).
+- Dirty working tree: a passing gate only vouches for the reviewed commit's
+  COMMITTED content. HEAD matching the gate record says nothing about
+  uncommitted local edits sitting in the working tree -- and a release
+  command (a Gradle build, a docker build, an npm publish) builds from the
+  filesystem, not from git HEAD. So a matched gate is not enough by itself;
+  the working tree must also be clean, or this blocks even with a fresh pass.
 """
 import json
 import os
@@ -30,7 +36,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gate_lib import failing_required, project_root_for  # noqa: E402
+from gate_lib import failing_required, is_working_tree_dirty, project_root_for  # noqa: E402
 
 RELEASE_PATTERNS = [
     r"\bgh\s+release\s+create\b",
@@ -79,23 +85,34 @@ def main() -> int:
         return 0
 
     failing = failing_required(project_root)
-    if not failing:
-        return 0
+    if failing:
+        skill_hint = {
+            "privacy_guardrails_review": "privacy-guardrails-review",
+            "qa_review": "qa-review",
+            "compliance_review": "compliance-review",
+        }
+        hints = ", ".join(skill_hint.get(g, g) for g in failing)
+        print(
+            f"Blocked by harness release gate: this looks like a release/publish/deploy "
+            f"action ({matched}), but these required gate(s) for "
+            f"{os.path.basename(project_root)} haven't passed for the current commit: "
+            f"{', '.join(failing)}. Run the matching skill(s) first ({hints}), or /ship.",
+            file=sys.stderr,
+        )
+        return 2
 
-    skill_hint = {
-        "privacy_guardrails_review": "privacy-guardrails-review",
-        "qa_review": "qa-review",
-        "compliance_review": "compliance-review",
-    }
-    hints = ", ".join(skill_hint.get(g, g) for g in failing)
-    print(
-        f"Blocked by harness release gate: this looks like a release/publish/deploy "
-        f"action ({matched}), but these required gate(s) for "
-        f"{os.path.basename(project_root)} haven't passed for the current commit: "
-        f"{', '.join(failing)}. Run the matching skill(s) first ({hints}), or /ship.",
-        file=sys.stderr,
-    )
-    return 2
+    if is_working_tree_dirty(project_root):
+        print(
+            f"Blocked by harness release gate: this looks like a release/publish/deploy "
+            f"action ({matched}), and required gates pass for the current commit, but "
+            f"{os.path.basename(project_root)} has uncommitted changes. A passing gate "
+            f"only vouches for the reviewed commit's committed content -- commit or "
+            f"stash first, since a build reads the working tree, not git HEAD.",
+            file=sys.stderr,
+        )
+        return 2
+
+    return 0
 
 
 if __name__ == "__main__":

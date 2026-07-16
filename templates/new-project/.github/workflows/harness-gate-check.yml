@@ -17,7 +17,10 @@ jobs:
   gate-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Pinned to commit SHA, not a floating tag (a tag can be moved; a SHA
+      # can't). Verified via `gh api repos/actions/checkout/git/refs/tags/v4.3.1`
+      # -- update by re-running that for a newer tag, don't hand-edit the SHA.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 2 # need HEAD~1 for the "bookkeeping commit" case
 

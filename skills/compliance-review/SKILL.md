@@ -18,3 +18,6 @@ Fills and re-verifies `docs/COMPLIANCE.md` (template: `templates/new-project/doc
 
 ## What fails this review
 A missing privacy policy on a store-bound build; a policy claim the code contradicts; a copyleft license in shipped code with no compliance plan. Most other findings are recorded follow-ups, not blockers.
+
+## Risk tier changes what "done" means, not just severity
+Check `docs/COMPLIANCE.md`'s "Risk tier" field. For **consumer** (the default), advisory is fine — proportionate, not enterprise theater. For **startup** or **regulated**, recommend the user hard-gate this review: `python3 "${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}/hooks/gate_write.py" <project_root> --require compliance_review` (add `qa_review` too — see `qa-review`'s matching note). Don't silently add it yourself; the user's own project, the user's call, but say so plainly rather than leaving an inert field that never influences anything.

@@ -1,0 +1,17 @@
+# CODEOWNERS — inert for a solo repo, real protection the moment a second
+# GitHub username joins the project.
+#
+# GitHub can require review from the listed owner(s) before a PR touching a
+# path can merge (repo Settings -> Branches -> branch protection -> "Require
+# review from Code Owners"). For a genuine solo repo this does nothing useful
+# yet -- you can't meaningfully require someone else's review when there is
+# no one else, and self-approval isn't real protection. Leave this
+# commented-out until a second contributor (co-founder, contractor) actually
+# has push access, then uncomment and list them for the paths that matter
+# most: the harness's own gate/policy files and the CI workflows that read
+# them, so a change to what counts as "reviewed" itself gets reviewed.
+#
+# Uncomment and adjust when that day comes:
+# .harness/                    @your-second-contributor
+# .github/workflows/           @your-second-contributor
+# docs/COMPLIANCE.md           @your-second-contributor

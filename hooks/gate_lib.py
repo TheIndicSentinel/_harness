@@ -93,11 +93,26 @@ def _save_gates(project_root: str, gates: dict) -> None:
         f.write("\n")
 
 
+MIN_NOTES_LENGTH = 15
+
+
 def record_gate(project_root: str, check: str, status: str, notes: str = "") -> dict:
     if check == REQUIRED_GATES_KEY:
         raise ValueError(f"'{REQUIRED_GATES_KEY}' is reserved — use set_required_gates()")
     if status not in ("pass", "fail"):
         raise ValueError("status must be 'pass' or 'fail'")
+    if len(notes.strip()) < MIN_NOTES_LENGTH:
+        # Not real protection against a determined bad actor -- a fabricated
+        # pass can still write a plausible-sounding fake summary. But it
+        # closes the cheapest failure mode (an empty or one-word "pass",
+        # accidental or not) and forces at least a sentence a human can
+        # sanity-check later. See docs/CI_GATE_CHECK.md's "honest limit"
+        # section for what this does and doesn't protect against.
+        raise ValueError(
+            f"notes must be a real summary (at least {MIN_NOTES_LENGTH} characters after "
+            f"trimming, got {len(notes.strip())}) -- an empty or trivial note is the "
+            f"cheapest way to fabricate a pass, don't make that path easy"
+        )
 
     gates = load_gates(project_root)
     gates[check] = {
@@ -146,3 +161,29 @@ def check_passing(project_root: str, check: str) -> bool:
 def failing_required(project_root: str) -> List[str]:
     """Required gates NOT currently passing for HEAD — empty list means clear."""
     return [g for g in required_gates(project_root) if not check_passing(project_root, g)]
+
+
+def is_working_tree_dirty(project_root: str) -> bool:
+    """True if there are uncommitted changes (staged or not) OUTSIDE the
+    harness's own .harness/ bookkeeping directory. A passing gate only
+    vouches for the reviewed commit's committed content -- a release command
+    run against a dirty tree can ship code that was never reviewed even
+    though HEAD still matches the gate record. .harness/ is excluded because
+    it's routinely untracked-by-design (gates.json/budget.json are local
+    sidecar files, not committed by default -- see docs/CI_GATE_CHECK.md) so
+    its mere presence isn't unreviewed code. Fails safe: a git error (e.g.
+    not a repo) counts as dirty, since "unknown" shouldn't read as clean.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "-C", project_root, "status", "--porcelain", "--",
+             ".", ":(exclude).harness"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode != 0:
+            return True
+        return bool(result.stdout.strip())
+    except (OSError, subprocess.SubprocessError):
+        return True

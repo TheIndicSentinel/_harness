@@ -3,10 +3,11 @@
 monthly token budget check layered on top of session_log.py's COST_LOG.md data.
 
 This is NOT authoritative accounting — COST_LOG.md itself is a best-effort,
-transcript-parsed estimate (see docs/OTEL.md for the authoritative
-alternative). It exists to turn "use subagents, keep context lean" from a
-purely behavioral habit into a number that can actually be threshold-alerted
-on. Absence of a budget is not an error: most projects won't set one, and
+transcript-parsed estimate (see docs/OTEL.md for the full ranking of sources
+by trust; nothing this harness touches directly is authoritative billing).
+It exists to turn "use subagents, keep context lean" from a purely
+behavioral habit into a number that can actually be threshold-alerted on.
+Absence of a budget is not an error: most projects won't set one, and
 that's fine — budget_status() returns None rather than a false "0% used".
 """
 import json
@@ -90,3 +91,31 @@ def alert_threshold_crossed(pct: int) -> Optional[int]:
         if pct >= t:
             return t
     return None
+
+
+def _current_month() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m")
+
+
+def should_alert(project_root: str, threshold: int) -> bool:
+    """True if this threshold hasn't already been alerted on this calendar
+    month -- a SessionStart hook fires every session, and re-printing the
+    same crossing every time is noise, not signal. A new month always resets
+    (last month's alert doesn't suppress this month's first crossing)."""
+    data = load_budget(project_root)
+    last = data.get("last_alerted")
+    if not isinstance(last, dict):
+        return True
+    if last.get("month") != _current_month():
+        return True
+    return threshold > last.get("threshold", 0)
+
+
+def record_alert(project_root: str, threshold: int) -> None:
+    data = load_budget(project_root)
+    data["last_alerted"] = {"month": _current_month(), "threshold": threshold}
+    path = budget_path(project_root)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")

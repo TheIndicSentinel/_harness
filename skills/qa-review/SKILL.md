@@ -15,7 +15,7 @@ The engineering-quality counterpart to `privacy-guardrails-review`. It records a
 4. **Dependency check.** Run the ecosystem's audit tool if available (`npm audit`, `pip-audit`, `cargo audit`; for Gradle, check if a dependency-check task is configured — if none exists, note that as a gap, don't fabricate a result). Flag known-vulnerable versions in shipped code paths.
 5. Judge the result: failures in production code paths fail the gate; a flaky test or a dev-only advisory is judgment territory — decide, and say why.
 6. Record: `python3 "${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}/hooks/gate_write.py" <project_root> qa_review <pass|fail> "<one-line summary>"`.
-7. If the project hard-gates QA (or the user wants to), mention `required_gates` — but never edit it to *remove* a gate to unblock a ship.
+7. If the project hard-gates QA (or the user wants to), mention `required_gates` — but never edit it to *remove* a gate to unblock a ship. Check `docs/COMPLIANCE.md`'s "Risk tier" field if it exists: for **startup** or **regulated** tiers, recommend hard-gating this review (`gate_write.py <project_root> --require qa_review` — add `compliance_review` too). Advisory-only is fine for **consumer**, the default.
 
 ## Example
 

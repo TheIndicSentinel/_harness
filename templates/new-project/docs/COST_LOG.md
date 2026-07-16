@@ -1,6 +1,6 @@
 # {{PROJECT_NAME}} — Session / Cost Log
 
-Auto-appended by the harness's Stop hook (one line per Claude Code session ended with cwd in this project). Token counts are a best-effort estimate parsed from the session transcript, not an authoritative dollar figure — cross-check `/cost` for that, or see `docs/OTEL.md` in the harness root for an authoritative alternative. Optional monthly token budget: `python3 hooks/budget_write.py <project_root> <tokens>` (harness root) — `harness-status` and session start will flag 50/80/100% crossings.
+Auto-appended by the harness's Stop hook (one line per Claude Code session ended with cwd in this project). Token counts are a best-effort estimate parsed from the session transcript, not an authoritative dollar figure — see `docs/OTEL.md` in the harness root for the full ranking of sources (this log, OTel, and the Admin API, in order of trust — OTel's own cost metric is also an approximation, not authoritative). Optional monthly token budget: `python3 hooks/budget_write.py <project_root> <tokens>` (harness root) — `harness-status` and session start will flag 50/80/100% crossings.
 
 | Date | Session ID | Duration | Est. tokens (in/out) |
 |------|-----------|----------|------------------------|

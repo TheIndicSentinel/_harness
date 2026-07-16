@@ -49,17 +49,17 @@ class TestProjectRootFor:
 
 class TestGateRoundtrip:
     def test_record_and_check_passing(self, git_repo):
-        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "ok")
+        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "no findings, reviewed")
         assert gate_lib.check_passing(str(git_repo), "privacy_guardrails_review") is True
 
     def test_stale_after_new_commit(self, git_repo):
-        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "ok")
+        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "no findings, reviewed")
         (git_repo / "file.txt").write_text("changed")
         commit(git_repo, "more work")
         assert gate_lib.check_passing(str(git_repo), "privacy_guardrails_review") is False
 
     def test_fail_status_not_passing(self, git_repo):
-        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "fail", "no")
+        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "fail", "found a real issue")
         assert gate_lib.check_passing(str(git_repo), "privacy_guardrails_review") is False
 
     def test_never_run_not_passing(self, git_repo):
@@ -67,11 +67,23 @@ class TestGateRoundtrip:
 
     def test_invalid_status_rejected(self, git_repo):
         with pytest.raises(ValueError):
-            gate_lib.record_gate(str(git_repo), "qa_review", "maybe", "")
+            gate_lib.record_gate(str(git_repo), "qa_review", "maybe", "a perfectly fine long note")
 
     def test_reserved_key_rejected(self, git_repo):
         with pytest.raises(ValueError):
-            gate_lib.record_gate(str(git_repo), "required_gates", "pass", "")
+            gate_lib.record_gate(str(git_repo), "required_gates", "pass", "a perfectly fine long note")
+
+    def test_trivial_notes_rejected(self, git_repo):
+        with pytest.raises(ValueError):
+            gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "ok")
+
+    def test_empty_notes_rejected(self, git_repo):
+        with pytest.raises(ValueError):
+            gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "")
+
+    def test_whitespace_only_notes_rejected(self, git_repo):
+        with pytest.raises(ValueError):
+            gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "   \n  ")
 
 
 class TestRequiredGates:
@@ -88,11 +100,42 @@ class TestRequiredGates:
 
     def test_failing_required_lists_unmet(self, git_repo):
         gate_lib.set_required_gates(str(git_repo), ["qa_review"])
-        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "")
+        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "no findings, reviewed")
         assert gate_lib.failing_required(str(git_repo)) == ["qa_review"]
 
     def test_failing_required_empty_when_all_pass(self, git_repo):
         gate_lib.set_required_gates(str(git_repo), ["qa_review"])
-        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "")
-        gate_lib.record_gate(str(git_repo), "qa_review", "pass", "")
+        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "no findings, reviewed")
+        gate_lib.record_gate(str(git_repo), "qa_review", "pass", "tests green, lint clean")
         assert gate_lib.failing_required(str(git_repo)) == []
+
+
+class TestWorkingTreeDirty:
+    def test_clean_tree_not_dirty(self, git_repo):
+        assert gate_lib.is_working_tree_dirty(str(git_repo)) is False
+
+    def test_uncommitted_tracked_change_is_dirty(self, git_repo):
+        (git_repo / "file.txt").write_text("changed, not committed")
+        assert gate_lib.is_working_tree_dirty(str(git_repo)) is True
+
+    def test_untracked_file_is_dirty(self, git_repo):
+        (git_repo / "new_untracked.txt").write_text("new")
+        assert gate_lib.is_working_tree_dirty(str(git_repo)) is True
+
+    def test_harness_dir_alone_is_not_dirty(self, git_repo):
+        """Regression: recording a gate creates an untracked .harness/ dir by
+        design (see docs/CI_GATE_CHECK.md) -- its mere presence must not
+        itself trip the dirty-worktree check, or every project would
+        permanently fail release right after its first passing review."""
+        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "no findings, reviewed")
+        assert gate_lib.is_working_tree_dirty(str(git_repo)) is False
+
+    def test_harness_dir_plus_real_change_is_still_dirty(self, git_repo):
+        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "no findings, reviewed")
+        (git_repo / "file.txt").write_text("sneaked in alongside the gate record")
+        assert gate_lib.is_working_tree_dirty(str(git_repo)) is True
+
+    def test_not_a_git_repo_counts_as_dirty(self, tmp_path):
+        not_a_repo = tmp_path / "not_a_repo"
+        not_a_repo.mkdir()
+        assert gate_lib.is_working_tree_dirty(str(not_a_repo)) is True

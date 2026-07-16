@@ -73,7 +73,7 @@ class TestReleaseGateHookEndToEnd:
         assert "privacy_guardrails_review" in stderr
 
     def test_passes_when_gate_recorded_and_current(self, git_repo):
-        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "ok")
+        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "no findings, reviewed")
         env = {**os.environ, "CLAUDE_HARNESS_PROJECTS_ROOT": os.path.dirname(str(git_repo))}
         code, _ = run_hook(
             {"cwd": str(git_repo), "tool_name": "Bash", "tool_input": {"command": "npm publish"}},
@@ -102,3 +102,17 @@ class TestReleaseGateHookEndToEnd:
             [sys.executable, HOOK_PATH], input="not json", capture_output=True, text=True
         )
         assert result.returncode == 0
+
+    def test_blocks_on_dirty_worktree_even_with_passing_gate(self, git_repo):
+        """The core dirty-worktree regression: a passing gate for the
+        reviewed commit must not authorize a release built from a working
+        tree with uncommitted edits on top of it."""
+        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "no findings, reviewed")
+        (git_repo / "file.txt").write_text("edited after the review, never committed")
+        env = {**os.environ, "CLAUDE_HARNESS_PROJECTS_ROOT": os.path.dirname(str(git_repo))}
+        code, stderr = run_hook(
+            {"cwd": str(git_repo), "tool_name": "Bash", "tool_input": {"command": "npm publish"}},
+            env,
+        )
+        assert code == 2
+        assert "uncommitted changes" in stderr

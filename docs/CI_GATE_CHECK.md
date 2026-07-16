@@ -31,3 +31,11 @@ jobs:
 ```
 
 This is opt-in — `harness-gate-check.yml` does nothing on its own (`workflow_call` only triggers when another workflow references it). Nothing breaks if you never wire it in; it just sits there as an available building block, per the harness's own rule against unused infrastructure.
+
+## The honest limit of this check: it's self-attested
+Be clear about what `harness_gate_check.py` actually verifies: that a gate record exists, says `pass`, and covers the current commit per the rule above. It does **not** verify that an independent review actually happened — nothing stops anyone (or an AI agent acting unsupervised) from hand-writing `{"status": "pass", ...}` into `gates.json` and committing it. That's not a flaw specific to this script; it's the ceiling of any self-attested record. Two things raise that ceiling, both GitHub repo settings rather than harness code:
+
+1. **Required status checks** (Settings → Branches → branch protection rule → "Require status checks to pass" → select the `gate-check` job). Once set, merging to the protected branch through GitHub's UI/API cannot skip the check — a real improvement over "the check exists but nothing forces anyone to run it," even for a single-maintainer repo, since bypassing a required check is a distinct, visible, deliberate admin action rather than an ordinary commit.
+2. **CODEOWNERS + required review** (`templates/new-project/.github/CODEOWNERS`, copied in inert/commented-out by default). This only becomes real protection once a second person with push access exists — for a genuine solo repo, "require review" either has no one to review or degrades to self-approval, neither of which adds trust. Uncomment it for `.harness/`, `.github/workflows/`, and `docs/COMPLIANCE.md` the day a co-founder or contractor gets write access, so a change to what counts as "reviewed" itself gets reviewed.
+
+What this harness deliberately does **not** do: have CI itself re-run the actual privacy/QA/compliance review. That would require an LLM call from inside the CI job (an Anthropic API key sitting in CI secrets, real per-run cost, and API usage this harness otherwise has no involvement with — see the README's scope section). If that trade-off is ever worth it for a specific project, it's a deliberate addition to that project's workflow, not something this harness builds in by default.

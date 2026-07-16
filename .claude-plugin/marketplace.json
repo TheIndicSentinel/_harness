@@ -8,7 +8,7 @@
     {
       "name": "solo-founder-harness",
       "source": "./",
-      "description": "Full-lifecycle Claude Code harness for solo/indie founders: ideation through sunset, with a mechanically enforced privacy/QA/compliance release gate."
+      "description": "Full-lifecycle Claude Code harness for solo/indie founders: ideation through sunset, with a privacy release gate always mechanically enforced (QA/compliance opt-in to the same enforcement)."
     }
   ]
 }

@@ -41,8 +41,17 @@ def check(gates_path: str, head: str, parent: str, repo_dir: str = "."):
             "Run the harness review skill(s) and commit the gate record."
         ]
 
-    with open(gates_path) as f:
-        gates = json.load(f)
+    try:
+        with open(gates_path) as f:
+            gates = json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        # Fail closed, not a crash -- a malformed file is not evidence of a
+        # pass, and a script traceback is a worse CI experience than a clear
+        # one-line reason.
+        return False, [f"{gates_path} is not valid JSON ({e}) — treating as no record"]
+
+    if not isinstance(gates, dict):
+        return False, [f"{gates_path} did not contain a JSON object — treating as no record"]
 
     required = ["privacy_guardrails_review"]
     extra = gates.get("required_gates")

@@ -52,8 +52,14 @@
 ## Useful references
 - PRD: [docs/PRD.md](docs/PRD.md)
 - Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Roadmap & risks: [docs/ROADMAP.md](docs/ROADMAP.md)
 - Release checklist: [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)
+- Changelog: [docs/CHANGELOG.md](docs/CHANGELOG.md)
+- Operations (runbook, incidents, support): [docs/OPERATIONS.md](docs/OPERATIONS.md)
 - Marketing/GTM: [docs/MARKETING.md](docs/MARKETING.md)
+- Business (pricing, unit economics): [docs/BUSINESS.md](docs/BUSINESS.md)
+- Legal & compliance: [docs/COMPLIANCE.md](docs/COMPLIANCE.md)
+- Connectors/MCP registry: [docs/CONNECTORS.md](docs/CONNECTORS.md)
 - Cost/session log: [docs/COST_LOG.md](docs/COST_LOG.md)
 
 Scaffolded {{DATE}} by `/new-project`.

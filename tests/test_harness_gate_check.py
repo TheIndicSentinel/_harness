@@ -91,3 +91,19 @@ class TestHarnessGateCheck:
         )
         ok, failures = gc.check(str(gates_path), code_sha, None)
         assert ok is True, failures
+
+    def test_malformed_json_fails_closed_not_crash(self, git_repo):
+        gates_path = git_repo / ".harness" / "gates.json"
+        os.makedirs(gates_path.parent, exist_ok=True)
+        gates_path.write_text("{not valid json!!")
+        ok, failures = gc.check(str(gates_path), head(git_repo), None)
+        assert ok is False
+        assert "not valid JSON" in failures[0]
+
+    def test_non_object_json_fails_closed(self, git_repo):
+        gates_path = git_repo / ".harness" / "gates.json"
+        os.makedirs(gates_path.parent, exist_ok=True)
+        gates_path.write_text(json.dumps(["not", "an", "object"]))
+        ok, failures = gc.check(str(gates_path), head(git_repo), None)
+        assert ok is False
+        assert "did not contain a JSON object" in failures[0]
