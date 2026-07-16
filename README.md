@@ -46,7 +46,15 @@ This local hook is a fast nudge, not a trust boundary — it only sees actions t
 
 ## Token budgets (optional)
 
-`python3 hooks/budget_write.py <project_root> <monthly_token_budget>` sets a best-effort monthly token budget per project, computed from `COST_LOG.md`. `/harness-status` always shows the current live percentage; a SessionStart alert fires once per threshold crossed (50/80/100%) per calendar month, not every session after crossing — it's a nudge, not a spend-prevention mechanism (nothing can stop a session mid-flight, and this doesn't see API/subscription/Claude.ai usage at all). Same caveat as the rest of `COST_LOG.md`: an estimate, not authoritative billing — see [`docs/OTEL.md`](docs/OTEL.md) for the full source ranking.
+`python3 hooks/budget_write.py <project_root> <monthly_token_budget>` sets a best-effort monthly token budget per project, computed from `COST_LOG.md`. `/harness-status` always shows the current live percentage; a SessionStart alert fires once per threshold crossed (50/80/100%) per calendar month, not every session after crossing — it's a nudge, not a spend-prevention mechanism (nothing can stop a session mid-flight, and this doesn't see API/subscription/Claude.ai usage at all). Same caveat as the rest of `COST_LOG.md`: an estimate, not authoritative billing — see [`docs/OTEL.md`](docs/OTEL.md) for the full source ranking. If you'd rather not bother with a budget, say so explicitly: `budget_write.py <project_root> --skip` — `/harness-status` then reports "intentionally skipped" instead of leaving it looking like an oversight.
+
+## Custom release commands (optional)
+
+`release_gate.py`'s built-in patterns cover common cases (`npm publish`, `./gradlew *Release*`, `docker push`, etc.), but can't know about a project's own custom deploy script. Declare it explicitly and the gate checks it too: `python3 hooks/gate_write.py <project_root> --release-commands "make release,./scripts/deploy.sh"` (substring match, not regex — these come from the project owner, not a generic pattern).
+
+## Project health (`/harness-status <name>`)
+
+The real risk isn't the harness failing — it's installing it and never actually wiring anything up. The per-project detail view reports whether: the CI gate template is present *and actually called* by a real workflow (not just sitting there unused); the release command and rollback runbook in `docs/OPERATIONS.md` are filled in, not template placeholders; required gates are shown as a deliberate choice; the token budget is set or explicitly marked skipped; and the connector registry has real entries. It also surfaces the project's declared stage (from `CLAUDE.md`) and risk tier (from `COMPLIANCE.md`) so both are visible at a glance instead of buried in docs nobody re-reads. This is informational, not a gate — a genuine prototype is fine leaving most of it unset; the point is that it's a visible, deliberate "not yet" instead of a silent gap.
 
 ## Configuration
 

@@ -13,9 +13,9 @@ Run this once, right after `/plugin install solo-founder-harness` (skip it entir
    - Privacy-by-default: no telemetry/analytics/data collection beyond what a feature explicitly requires; confirm before wiring up a new data-collecting call.
    - Guardrails-first: user-input surfaces (chat, upload, form) get validation + a guardrail review before "done".
    - Confirm before external/shared actions: push/deploy/publish always gets a check-in first.
-   - Release gate: `qa-review`, `compliance-review`, and `privacy-guardrails-review` (always required) must pass for the current commit before a real ship command runs — enforced by this plugin's release_gate.py hook, not just advice.
+   - Release gate: `privacy-guardrails-review` is always required and must pass for the current commit before a real ship command runs — enforced by this plugin's release_gate.py hook, not just advice. `qa-review` and `compliance-review` are available to opt into the same hard enforcement (`gate_write.py --require qa_review,compliance_review`) — recommended for anything beyond a throwaway prototype, not on by default.
    ```
    Append it only with explicit confirmation — this edits a file outside the plugin's own scope.
-3. **Point at `docs/OTEL.md`** (in this plugin's install directory) if they want authoritative token/cost tracking instead of the best-effort default — mention it, don't enable anything.
+3. **Point at `docs/OTEL.md`** (in this plugin's install directory) for the full ranking of token/cost sources by trust if the default best-effort estimate isn't enough — mention it, don't enable anything.
 4. **Verify.** Run `/harness-status` (no argument) to confirm the hooks can see their projects root correctly now.
 5. Report what was changed and what the developer should do next (`/new-project` to scaffold their first tracked project, or `/adopt-project` on an existing one).

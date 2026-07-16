@@ -5,14 +5,20 @@ Usage:
   python3 gate_write.py <project_root> <check_name> <pass|fail> "<notes>"
   python3 gate_write.py <project_root> --require qa_review,compliance_review
   python3 gate_write.py <project_root> --require ""        # back to privacy-only
+  python3 gate_write.py <project_root> --release-commands "make release,./scripts/deploy.sh"
+  python3 gate_write.py <project_root> --release-commands ""   # clear the list
 
 --require sets the opt-in hard-gate list (privacy_guardrails_review is always
 required and never needs listing). It can ADD gates freely; a skill must never
 use it to drop a gate just to unblock a ship.
+
+--release-commands declares literal command substrings release_gate.py should
+treat as ship actions IN ADDITION TO its built-in regex patterns -- for a
+project's own custom deploy script that the generic patterns can't know about.
 """
 import sys
 
-from gate_lib import record_gate, set_required_gates
+from gate_lib import record_gate, set_release_commands, set_required_gates
 
 
 def main() -> int:
@@ -22,10 +28,17 @@ def main() -> int:
         print(f"Required gates for {sys.argv[1]}: {', '.join(result)}")
         return 0
 
+    if len(sys.argv) >= 4 and sys.argv[2] == "--release-commands":
+        commands = [c.strip() for c in sys.argv[3].split(",") if c.strip()]
+        result = set_release_commands(sys.argv[1], commands)
+        print(f"Declared release commands for {sys.argv[1]}: {', '.join(result) or '(none)'}")
+        return 0
+
     if len(sys.argv) < 4:
         print(
             "usage: gate_write.py <project_root> <check_name> <pass|fail> [notes]\n"
-            "       gate_write.py <project_root> --require <gate1,gate2,...>",
+            "       gate_write.py <project_root> --require <gate1,gate2,...>\n"
+            "       gate_write.py <project_root> --release-commands <cmd1,cmd2,...>",
             file=sys.stderr,
         )
         return 1

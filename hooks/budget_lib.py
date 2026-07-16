@@ -39,17 +39,36 @@ def load_budget(project_root: str) -> dict:
         return {}
 
 
-def set_monthly_budget(project_root: str, tokens: int) -> dict:
-    if tokens <= 0:
-        raise ValueError("tokens must be a positive integer")
-    data = load_budget(project_root)
-    data["monthly_token_budget"] = tokens
+def _save_budget(project_root: str, data: dict) -> dict:
     path = budget_path(project_root)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
         f.write("\n")
     return data
+
+
+def set_monthly_budget(project_root: str, tokens: int) -> dict:
+    if tokens <= 0:
+        raise ValueError("tokens must be a positive integer")
+    data = load_budget(project_root)
+    data["monthly_token_budget"] = tokens
+    data.pop("skipped", None)  # setting a real budget supersedes "skipped"
+    return _save_budget(project_root, data)
+
+
+def mark_budget_skipped(project_root: str) -> dict:
+    """Record an explicit 'no budget, on purpose' decision -- distinct from
+    never having set one, so status reporting can tell "haven't decided yet"
+    from "decided not to bother"."""
+    data = load_budget(project_root)
+    data["skipped"] = True
+    data.pop("monthly_token_budget", None)
+    return _save_budget(project_root, data)
+
+
+def is_budget_skipped(project_root: str) -> bool:
+    return bool(load_budget(project_root).get("skipped"))
 
 
 def tokens_used_this_month(project_root: str) -> Optional[int]:
@@ -114,8 +133,4 @@ def should_alert(project_root: str, threshold: int) -> bool:
 def record_alert(project_root: str, threshold: int) -> None:
     data = load_budget(project_root)
     data["last_alerted"] = {"month": _current_month(), "threshold": threshold}
-    path = budget_path(project_root)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
+    _save_budget(project_root, data)

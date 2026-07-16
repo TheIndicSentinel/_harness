@@ -9,12 +9,15 @@ gates.json shape:
   {
     "<gate_name>": {"status", "reviewed_commit", "timestamp", "notes"},
     ...
-    "required_gates": ["privacy_guardrails_review", "qa_review", ...]   # optional
+    "required_gates": ["privacy_guardrails_review", "qa_review", ...],  # optional
+    "release_commands": ["make release", "./scripts/deploy.sh"]        # optional
   }
 
-"required_gates" is a reserved top-level key, not a gate record. The
-privacy gate is ALWAYS required regardless of that list's contents —
-editing it out of gates.json does not un-require it.
+"required_gates" and "release_commands" are reserved top-level keys, not
+gate records (see RESERVED_KEYS). The privacy gate is ALWAYS required
+regardless of required_gates' contents — editing it out of gates.json does
+not un-require it. release_commands supplements (never replaces) the
+built-in regex patterns in release_gate.py.
 """
 import json
 import os
@@ -23,6 +26,8 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 REQUIRED_GATES_KEY = "required_gates"
+RELEASE_COMMANDS_KEY = "release_commands"
+RESERVED_KEYS = (REQUIRED_GATES_KEY, RELEASE_COMMANDS_KEY)
 ALWAYS_REQUIRED = ["privacy_guardrails_review"]
 DEFAULT_PROJECTS_ROOT = "~/Documents/Projects"
 
@@ -97,8 +102,8 @@ MIN_NOTES_LENGTH = 15
 
 
 def record_gate(project_root: str, check: str, status: str, notes: str = "") -> dict:
-    if check == REQUIRED_GATES_KEY:
-        raise ValueError(f"'{REQUIRED_GATES_KEY}' is reserved — use set_required_gates()")
+    if check in RESERVED_KEYS:
+        raise ValueError(f"'{check}' is reserved — use the matching set_*() helper")
     if status not in ("pass", "fail"):
         raise ValueError("status must be 'pass' or 'fail'")
     if len(notes.strip()) < MIN_NOTES_LENGTH:
@@ -161,6 +166,29 @@ def check_passing(project_root: str, check: str) -> bool:
 def failing_required(project_root: str) -> List[str]:
     """Required gates NOT currently passing for HEAD — empty list means clear."""
     return [g for g in required_gates(project_root) if not check_passing(project_root, g)]
+
+
+def release_commands(project_root: str) -> List[str]:
+    """Project-declared release command substrings (e.g. "make release",
+    "./scripts/deploy.sh"), checked by release_gate.py IN ADDITION TO the
+    built-in generic regex patterns -- not instead of them. Exists because a
+    generic pattern list can't know about a project's own custom deploy
+    script, and building a bespoke adapter per cloud provider doesn't scale;
+    letting a project just declare its own command(s) does. Empty by
+    default -- most projects rely on the built-in patterns alone."""
+    gates = load_gates(project_root)
+    declared = gates.get(RELEASE_COMMANDS_KEY)
+    if not isinstance(declared, list):
+        return []
+    return [c for c in declared if isinstance(c, str) and c.strip()]
+
+
+def set_release_commands(project_root: str, commands: List[str]) -> List[str]:
+    cleaned = sorted({c.strip() for c in commands if isinstance(c, str) and c.strip()})
+    gates = load_gates(project_root)
+    gates[RELEASE_COMMANDS_KEY] = cleaned
+    _save_gates(project_root, gates)
+    return release_commands(project_root)
 
 
 def is_working_tree_dirty(project_root: str) -> bool:

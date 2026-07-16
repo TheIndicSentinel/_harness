@@ -74,6 +74,25 @@ class TestBudgetLib:
         assert budget_lib.budget_status(str(git_repo)) is None
 
 
+class TestBudgetSkip:
+    def test_not_skipped_by_default(self, git_repo):
+        assert budget_lib.is_budget_skipped(str(git_repo)) is False
+
+    def test_mark_skipped(self, git_repo):
+        budget_lib.mark_budget_skipped(str(git_repo))
+        assert budget_lib.is_budget_skipped(str(git_repo)) is True
+
+    def test_setting_real_budget_clears_skipped(self, git_repo):
+        budget_lib.mark_budget_skipped(str(git_repo))
+        budget_lib.set_monthly_budget(str(git_repo), 10000)
+        assert budget_lib.is_budget_skipped(str(git_repo)) is False
+
+    def test_marking_skipped_clears_real_budget(self, git_repo):
+        budget_lib.set_monthly_budget(str(git_repo), 10000)
+        budget_lib.mark_budget_skipped(str(git_repo))
+        assert budget_lib.load_budget(str(git_repo)).get("monthly_token_budget") is None
+
+
 class TestAlertDeduplication:
     def test_first_crossing_should_alert(self, git_repo):
         assert budget_lib.should_alert(str(git_repo), 80) is True

@@ -29,6 +29,10 @@ Coverage and known boundaries (documented deliberately):
   command (a Gradle build, a docker build, an npm publish) builds from the
   filesystem, not from git HEAD. So a matched gate is not enough by itself;
   the working tree must also be clean, or this blocks even with a fresh pass.
+- Project-declared release commands (gates.json "release_commands", set via
+  gate_write.py --release-commands) supplement the built-in patterns below
+  for a project's own custom deploy script that no generic pattern matches --
+  a substring check, not a regex, since these come from the project owner.
 """
 import json
 import os
@@ -36,7 +40,12 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gate_lib import failing_required, is_working_tree_dirty, project_root_for  # noqa: E402
+from gate_lib import (  # noqa: E402
+    failing_required,
+    is_working_tree_dirty,
+    project_root_for,
+    release_commands,
+)
 
 RELEASE_PATTERNS = [
     r"\bgh\s+release\s+create\b",
@@ -56,16 +65,26 @@ COMPILED = [re.compile(p) for p in RELEASE_PATTERNS]
 MCP_SHIP_TOOL = re.compile(r"^mcp__.*(deploy|publish|release|submit)", re.IGNORECASE)
 
 
-def is_ship_action(payload: dict) -> str:
-    """Return a short label of what matched, or '' if not a ship action."""
+def is_ship_action(payload: dict, declared_commands=()) -> str:
+    """Return a short label of what matched, or '' if not a ship action.
+    declared_commands: project-declared substrings (gates.json
+    "release_commands"), checked case-insensitively alongside the built-in
+    regex patterns -- not instead of them.
+    """
     tool_name = payload.get("tool_name", "") or ""
     if tool_name.startswith("mcp__"):
         if MCP_SHIP_TOOL.search(tool_name):
             return f"MCP tool '{tool_name}'"
         return ""
     command = (payload.get("tool_input", {}) or {}).get("command", "")
-    if command and any(p.search(command) for p in COMPILED):
+    if not command:
+        return ""
+    if any(p.search(command) for p in COMPILED):
         return f"command '{command.strip()[:80]}'"
+    lowered = command.lower()
+    for declared in declared_commands:
+        if declared.lower() in lowered:
+            return f"declared release command '{declared}' (in '{command.strip()[:80]}')"
     return ""
 
 
@@ -80,7 +99,7 @@ def main() -> int:
     if not project_root or not os.path.isdir(project_root):
         return 0
 
-    matched = is_ship_action(payload)
+    matched = is_ship_action(payload, release_commands(project_root))
     if not matched:
         return 0
 

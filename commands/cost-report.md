@@ -8,6 +8,6 @@ Build a rollup report from the harness's session logs:
 2. For each one that has a `docs/COST_LOG.md`, read it and extract the log table rows (date, session id, duration, est. tokens).
 3. Print a per-project summary: number of sessions logged, and total estimated input/output tokens where parseable (skip `n/a` rows rather than treating them as zero, and say how many rows were skipped).
 4. Project directories with no `docs/COST_LOG.md` yet just get a one-line "no sessions logged yet" note — don't treat that as an error.
-5. End with this exact reminder, verbatim: "These are best-effort token estimates parsed from session transcripts, not authoritative dollar costs — run `/cost` in a session for the real figure."
+5. End with this exact reminder, verbatim: "These are best-effort token estimates parsed from session transcripts. `/cost` gives Claude Code's own session estimate, which is closer but still not a guaranteed dollar-for-dollar match to your bill — see docs/OTEL.md in the harness root for the full ranking of sources by trust if you need an authoritative figure."
 
 Keep the whole report compact — a per-project table is fine, don't dump raw log file contents.

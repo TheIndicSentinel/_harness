@@ -61,6 +61,19 @@ class TestIsShipAction:
     def test_does_not_match_benign_mcp_tool(self):
         assert release_gate.is_ship_action({"tool_name": "mcp__github__list_issues"}) == ""
 
+    def test_declared_command_matched_when_no_builtin_pattern_fits(self):
+        payload = {"tool_name": "Bash", "tool_input": {"command": "make release --prod"}}
+        assert release_gate.is_ship_action(payload) == ""  # not matched without declaration
+        assert release_gate.is_ship_action(payload, declared_commands=["make release"]) != ""
+
+    def test_declared_command_is_case_insensitive_substring(self):
+        payload = {"tool_name": "Bash", "tool_input": {"command": "MAKE RELEASE --prod"}}
+        assert release_gate.is_ship_action(payload, declared_commands=["make release"]) != ""
+
+    def test_unrelated_declared_command_does_not_false_positive(self):
+        payload = {"tool_name": "Bash", "tool_input": {"command": "echo hello"}}
+        assert release_gate.is_ship_action(payload, declared_commands=["make release"]) == ""
+
 
 class TestReleaseGateHookEndToEnd:
     def test_blocks_when_no_gate_recorded(self, git_repo):
@@ -116,3 +129,20 @@ class TestReleaseGateHookEndToEnd:
         )
         assert code == 2
         assert "uncommitted changes" in stderr
+
+    def test_declared_release_command_end_to_end(self, git_repo):
+        gate_lib.set_release_commands(str(git_repo), ["make release"])
+        env = {**os.environ, "CLAUDE_HARNESS_PROJECTS_ROOT": os.path.dirname(str(git_repo))}
+        code, stderr = run_hook(
+            {"cwd": str(git_repo), "tool_name": "Bash", "tool_input": {"command": "make release"}},
+            env,
+        )
+        assert code == 2  # blocked: declared command recognized, but no gate recorded yet
+        assert "privacy_guardrails_review" in stderr
+
+        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "no findings, reviewed")
+        code, _ = run_hook(
+            {"cwd": str(git_repo), "tool_name": "Bash", "tool_input": {"command": "make release"}},
+            env,
+        )
+        assert code == 0  # now passes once the gate is recorded

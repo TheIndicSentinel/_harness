@@ -6,6 +6,7 @@ import pytest
 
 HARNESS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(HARNESS_ROOT, "hooks"))
+sys.path.insert(0, os.path.join(HARNESS_ROOT, "scripts"))
 sys.path.insert(
     0, os.path.join(HARNESS_ROOT, "templates", "new-project", ".github", "workflows")
 )

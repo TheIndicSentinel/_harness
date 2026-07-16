@@ -110,6 +110,24 @@ class TestRequiredGates:
         assert gate_lib.failing_required(str(git_repo)) == []
 
 
+class TestReleaseCommands:
+    def test_empty_by_default(self, git_repo):
+        assert gate_lib.release_commands(str(git_repo)) == []
+
+    def test_set_and_get(self, git_repo):
+        result = gate_lib.set_release_commands(str(git_repo), ["make release", "./deploy.sh"])
+        assert set(result) == {"make release", "./deploy.sh"}
+        assert set(gate_lib.release_commands(str(git_repo))) == {"make release", "./deploy.sh"}
+
+    def test_blank_entries_dropped(self, git_repo):
+        result = gate_lib.set_release_commands(str(git_repo), ["make release", "  ", ""])
+        assert result == ["make release"]
+
+    def test_release_commands_key_reserved_for_record_gate(self, git_repo):
+        with pytest.raises(ValueError):
+            gate_lib.record_gate(str(git_repo), "release_commands", "pass", "a perfectly fine long note")
+
+
 class TestWorkingTreeDirty:
     def test_clean_tree_not_dirty(self, git_repo):
         assert gate_lib.is_working_tree_dirty(str(git_repo)) is False

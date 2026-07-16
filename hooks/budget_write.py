@@ -2,17 +2,29 @@
 """CLI to set a project's monthly token budget (best-effort, advisory —
 see budget_lib.py's module docstring for what this is and isn't).
 
-Usage: python3 budget_write.py <project_root> <monthly_token_budget>
+Usage:
+  python3 budget_write.py <project_root> <monthly_token_budget>
+  python3 budget_write.py <project_root> --skip
+
+--skip records an explicit "no budget, on purpose" decision, distinct from
+never having run this command -- so harness_status.py can tell "haven't
+decided" from "decided not to bother" in its project-health report.
 """
 import sys
 
-from budget_lib import set_monthly_budget
+from budget_lib import mark_budget_skipped, set_monthly_budget
 
 
 def main() -> int:
+    if len(sys.argv) == 3 and sys.argv[2] == "--skip":
+        mark_budget_skipped(sys.argv[1])
+        print(f"Recorded an intentional budget skip for {sys.argv[1]}")
+        return 0
+
     if len(sys.argv) != 3:
         print(
-            "usage: budget_write.py <project_root> <monthly_token_budget>",
+            "usage: budget_write.py <project_root> <monthly_token_budget>\n"
+            "       budget_write.py <project_root> --skip",
             file=sys.stderr,
         )
         return 1
