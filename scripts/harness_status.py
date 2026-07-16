@@ -10,10 +10,27 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "hooks"))
-from gate_lib import current_commit, load_gates  # noqa: E402
+from gate_lib import (  # noqa: E402
+    REQUIRED_GATES_KEY,
+    check_passing,
+    current_commit,
+    load_gates,
+    projects_root,
+    required_gates,
+)
 
-PROJECTS_ROOT = os.path.expanduser("~/Documents/Projects")
-DOC_FILES = ["PRD.md", "MARKETING.md", "COST_LOG.md", "RELEASE_CHECKLIST.md"]
+PROJECTS_ROOT = projects_root()
+DOC_FILES = [
+    "PRD.md",
+    "MARKETING.md",
+    "COST_LOG.md",
+    "RELEASE_CHECKLIST.md",
+    "ROADMAP.md",
+    "CHANGELOG.md",
+    "OPERATIONS.md",
+    "BUSINESS.md",
+    "COMPLIANCE.md",
+]
 
 
 def list_projects():
@@ -36,17 +53,31 @@ def docs_state(project_root):
     return present
 
 
-def gate_state(project_root):
+def gate_label(project_root, name):
     gates = load_gates(project_root)
-    entry = gates.get("privacy_guardrails_review")
-    if not entry:
-        return "none", None
-    head = current_commit(project_root)
-    if entry.get("status") == "pass" and entry.get("reviewed_commit") == head:
-        return "pass (current)", entry
+    entry = gates.get(name)
+    if not isinstance(entry, dict):
+        return "never run"
+    if check_passing(project_root, name):
+        return "pass (current)"
     if entry.get("status") == "pass":
-        return "pass (stale — new commits since review)", entry
-    return f"{entry.get('status', 'unknown')}", entry
+        return "pass (stale — new commits since review)"
+    return entry.get("status", "unknown")
+
+
+def gates_summary(project_root):
+    """One compact cell for the table: required gates and their state."""
+    gates = load_gates(project_root)
+    if not gates:
+        return "none"
+    parts = []
+    for name in required_gates(project_root):
+        label = gate_label(project_root, name)
+        short = {"pass (current)": "pass", "never run": "missing"}.get(label, label)
+        if "stale" in label:
+            short = "STALE"
+        parts.append(f"{name.replace('_review', '').replace('_guardrails', '')}:{short}")
+    return "  ".join(parts)
 
 
 def session_count(project_root):
@@ -79,15 +110,15 @@ def summary_row(name):
     project_root = os.path.join(PROJECTS_ROOT, name)
     docs = docs_state(project_root)
     adopted = f"{sum(1 for d in docs if d)}/{len(DOC_FILES)}"
-    gate, _ = gate_state(project_root)
+    gates = gates_summary(project_root)
     sessions = session_count(project_root)
     git = git_state(project_root)
-    return name, adopted, gate, str(sessions), git
+    return name, adopted, gates, str(sessions), git
 
 
 def print_table(names):
     rows = [summary_row(n) for n in names]
-    headers = ["Project", "Docs adopted", "Gate", "Sessions logged", "Git"]
+    headers = ["Project", "Docs", "Required gates", "Sessions", "Git"]
     widths = [max(len(h), *(len(r[i]) for r in rows)) if rows else len(h) for i, h in enumerate(headers)]
     def fmt_row(r):
         return "  ".join(c.ljust(w) for c, w in zip(r, widths))
@@ -108,16 +139,24 @@ def print_detail(name):
     print(f"git: {git_state(project_root)}")
     print()
     print("docs:")
-    for d in docs_state(project_root):
-        print(f"  [{'x' if d else ' '}] {d or '(missing)'}")
+    for d, f in zip(docs_state(project_root), DOC_FILES):
+        print(f"  [{'x' if d else ' '}] {f}")
     print()
-    gate, entry = gate_state(project_root)
-    print(f"privacy_guardrails_review gate: {gate}")
-    if entry:
-        print(f"  reviewed_commit: {entry.get('reviewed_commit')}")
-        print(f"  current HEAD:    {current_commit(project_root)}")
-        print(f"  timestamp:       {entry.get('timestamp')}")
-        print(f"  notes:           {entry.get('notes')}")
+    gates = load_gates(project_root)
+    req = required_gates(project_root)
+    print(f"required gates: {', '.join(req)}")
+    all_names = req + sorted(
+        g for g in gates if g not in req and g != REQUIRED_GATES_KEY
+    )
+    for gname in all_names:
+        entry = gates.get(gname)
+        tag = "" if gname in req else " (advisory)"
+        print(f"  {gname}{tag}: {gate_label(project_root, gname)}")
+        if isinstance(entry, dict):
+            print(f"    reviewed_commit: {entry.get('reviewed_commit')}")
+            print(f"    timestamp:       {entry.get('timestamp')}")
+            print(f"    notes:           {entry.get('notes')}")
+    print(f"  current HEAD: {current_commit(project_root)}")
     print()
     print(f"sessions logged: {session_count(project_root)}")
 

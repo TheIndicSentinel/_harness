@@ -1,0 +1,14 @@
+{
+  "name": "solo-founder-harness-marketplace",
+  "owner": {
+    "name": "bytenomad",
+    "email": "inerd1412@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "solo-founder-harness",
+      "source": "./",
+      "description": "Full-lifecycle Claude Code harness for solo/indie founders: ideation through sunset, with a mechanically enforced privacy/QA/compliance release gate."
+    }
+  ]
+}

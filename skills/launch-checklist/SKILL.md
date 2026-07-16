@@ -9,14 +9,17 @@ This is the pre-launch walkthrough — the human-facing companion to the mechani
 
 ## Process
 
-1. Locate `docs/RELEASE_CHECKLIST.md` in the current project. If it doesn't exist, use the template shape from `~/Documents/Projects/_harness/templates/new-project/docs/RELEASE_CHECKLIST.md`.
-2. **Gate check first.** Check whether `privacy_guardrails_review` is passing for the current commit (read `.harness/gates.json`, compare `reviewed_commit` to `git rev-parse HEAD`). If missing or stale, run the `privacy-guardrails-review` skill now rather than telling the user to go run it separately.
+1. Locate `docs/RELEASE_CHECKLIST.md` in the current project. If it doesn't exist, use the template shape from `templates/new-project/docs/RELEASE_CHECKLIST.md` in the harness root (`$CLAUDE_PLUGIN_ROOT` if installed as a plugin, otherwise `~/Documents/Projects/_harness`).
+2. **Gate check first.** Read `.harness/gates.json` and determine the required gates: the `required_gates` list if present, otherwise just `privacy_guardrails_review`. For each required gate, check it's passing for the current commit (compare `reviewed_commit` to `git rev-parse HEAD`). If a required gate is missing or stale, run the matching skill now (`privacy-guardrails-review`, `qa-review`, `compliance-review`) rather than telling the user to go run it separately.
 3. Walk the remaining checklist items conversationally — these aren't code-verifiable, so ask/confirm rather than assume:
+   - QA and compliance status even when not hard-gated (advisory `qa_review` / `compliance_review` entries in gates.json — stale or missing is worth saying out loud)
+   - Version bumped and `docs/CHANGELOG.md` updated (run `release-notes` if stale)
    - Secrets check (spot-check, the `secrets_guard` hook only catches attempted edits, not what's already committed)
    - Crash/error monitoring in place, or explicitly deferred with a reason
-   - Rollback plan if the release breaks something
+   - Rollback plan current in `docs/OPERATIONS.md`'s runbook (not just "exists" — the previous-version artifact path still valid?)
    - Marketing/GTM plan reviewed (point at `gtm-marketing` skill / `docs/MARKETING.md` if not done yet)
-   - Support channel ready for feedback/bug reports
+   - Support channel ready for feedback/bug reports (`docs/OPERATIONS.md`)
+   - Post-launch success-criteria review scheduled (`docs/ROADMAP.md` table — first check ~2 weeks out)
 4. Report a clear final status: which items are done, which are outstanding, and an explicit statement of whether `release_gate.py` will currently allow a matched release command to proceed (it will, if and only if step 2 ended in a fresh pass).
 
 ## Example

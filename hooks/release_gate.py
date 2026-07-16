@@ -1,10 +1,28 @@
 #!/usr/bin/env python3
-"""PreToolUse hook (matcher: Bash): hard-blocks release/publish/deploy commands
-until the privacy_guardrails_review gate has passed for the CURRENT commit.
+"""PreToolUse hook (matcher: Bash|mcp__.*): hard-blocks release/publish/deploy
+actions until every required gate (privacy_guardrails_review always; plus any
+project opt-ins in gates.json "required_gates") has passed for the CURRENT commit.
 
-Only active when cwd is under ~/Documents/Projects/ — no-ops elsewhere.
-Deliberately does not match plain `git push` (would block ordinary branch
-pushes); only matches commands that are recognizably "ship it to users."
+Only active when cwd is under the harness's projects root (see
+gate_lib.projects_root(), overridable via CLAUDE_HARNESS_PROJECTS_ROOT) —
+no-ops elsewhere.
+
+Coverage and known boundaries (documented deliberately):
+- Bash: matches commands that are recognizably "ship it to users". Plain
+  `git push` is deliberately NOT matched (would block ordinary branch pushes).
+  `./gradlew *Release*` IS matched even for local builds — stricter than pure
+  "publish", kept on purpose: a signed release artifact tends to get
+  distributed, so it should clear the gates before it exists.
+- MCP tools: any mcp__* tool whose name says deploy/publish/release/submit is
+  gated the same way.
+- This is policy for the cooperative path, not a security boundary: a command
+  run outside the project cwd (git -C, absolute paths), an obfuscated command
+  string, or a manual terminal outside Claude Code bypasses it. The honest
+  reviews it points to are the real control; this hook makes skipping them a
+  deliberate act instead of an accident.
+- Fail-mode: infrastructure errors (unreadable payload) fail OPEN so a hook bug
+  can't brick every Bash call; the gate check itself fails CLOSED (missing or
+  stale record blocks).
 """
 import json
 import os
@@ -12,9 +30,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gate_lib import check_passing  # noqa: E402
-
-PROJECTS_ROOT = os.path.expanduser("~/Documents/Projects")
+from gate_lib import failing_required, project_root_for  # noqa: E402
 
 RELEASE_PATTERNS = [
     r"\bgh\s+release\s+create\b",
@@ -31,17 +47,20 @@ RELEASE_PATTERNS = [
 ]
 
 COMPILED = [re.compile(p) for p in RELEASE_PATTERNS]
+MCP_SHIP_TOOL = re.compile(r"^mcp__.*(deploy|publish|release|submit)", re.IGNORECASE)
 
 
-def project_root_for(cwd: str):
-    cwd = os.path.abspath(cwd)
-    if not cwd.startswith(PROJECTS_ROOT + os.sep):
-        return None
-    rest = cwd[len(PROJECTS_ROOT) + 1 :]
-    if not rest or rest.startswith("_harness"):
-        return None
-    top = rest.split(os.sep)[0]
-    return os.path.join(PROJECTS_ROOT, top)
+def is_ship_action(payload: dict) -> str:
+    """Return a short label of what matched, or '' if not a ship action."""
+    tool_name = payload.get("tool_name", "") or ""
+    if tool_name.startswith("mcp__"):
+        if MCP_SHIP_TOOL.search(tool_name):
+            return f"MCP tool '{tool_name}'"
+        return ""
+    command = (payload.get("tool_input", {}) or {}).get("command", "")
+    if command and any(p.search(command) for p in COMPILED):
+        return f"command '{command.strip()[:80]}'"
+    return ""
 
 
 def main() -> int:
@@ -55,18 +74,25 @@ def main() -> int:
     if not project_root or not os.path.isdir(project_root):
         return 0
 
-    command = (payload.get("tool_input", {}) or {}).get("command", "")
-    if not command or not any(p.search(command) for p in COMPILED):
+    matched = is_ship_action(payload)
+    if not matched:
         return 0
 
-    if check_passing(project_root, "privacy_guardrails_review"):
+    failing = failing_required(project_root)
+    if not failing:
         return 0
 
+    skill_hint = {
+        "privacy_guardrails_review": "privacy-guardrails-review",
+        "qa_review": "qa-review",
+        "compliance_review": "compliance-review",
+    }
+    hints = ", ".join(skill_hint.get(g, g) for g in failing)
     print(
-        "Blocked by harness release gate: this looks like a release/publish/deploy "
-        f"command ('{command.strip()[:80]}'), but the privacy_guardrails_review gate "
-        f"for {os.path.basename(project_root)} hasn't passed for the current commit. "
-        "Run the privacy-guardrails-review skill (or /ship) first.",
+        f"Blocked by harness release gate: this looks like a release/publish/deploy "
+        f"action ({matched}), but these required gate(s) for "
+        f"{os.path.basename(project_root)} haven't passed for the current commit: "
+        f"{', '.join(failing)}. Run the matching skill(s) first ({hints}), or /ship.",
         file=sys.stderr,
     )
     return 2

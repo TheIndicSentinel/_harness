@@ -5,16 +5,16 @@ description: Runs a privacy and guardrails review of the current project and rec
 
 # Privacy & Guardrails Review
 
-This is the review that the harness's `release_gate.py` hook checks before it allows a real publish/deploy/release command to run (see `~/Documents/Projects/CLAUDE.md`). Do not treat this as a formality — the gate is only as good as this review is honest.
+This is the review that the harness's `release_gate.py` hook checks before it allows a real publish/deploy/release command to run (see the umbrella CLAUDE.md — symlinked to `~/Documents/Projects/CLAUDE.md` for a local install, or set up via `/harness-init` for a plugin install). Do not treat this as a formality — the gate is only as good as this review is honest.
 
 ## Process
 
-1. Confirm you're inside a project under `~/Documents/Projects/` that's a git repo (the gate is tied to a commit hash — an uncommitted working tree can't be gated meaningfully; tell the user to commit first if there are uncommitted changes relevant to what's being reviewed).
+1. Confirm you're inside a project under the harness's projects root (defaults to `~/Documents/Projects/`, overridable via `CLAUDE_HARNESS_PROJECTS_ROOT`) that's a git repo (the gate is tied to a commit hash — an uncommitted working tree can't be gated meaningfully; tell the user to commit first if there are uncommitted changes relevant to what's being reviewed).
 2. Launch the `security-privacy-auditor` subagent to do the actual code scan (data collection points, hardcoded secrets, unguarded input surfaces, guardrail gaps — see that agent's definition for the full list). Let it do the context-heavy file reading; don't duplicate that work in the main thread.
 3. Read the subagent's verdict and findings. You make the final PASS/FAIL call, not the subagent — think through each finding's real-world impact before deciding (e.g. a finding in a test fixture file isn't the same severity as one in production code); don't just mechanically inherit the subagent's tally.
 4. Record the result:
    ```
-   python3 ~/Documents/Projects/_harness/hooks/gate_write.py <project_root> privacy_guardrails_review <pass|fail> "<one-line summary>"
+   python3 "${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}/hooks/gate_write.py" <project_root> privacy_guardrails_review <pass|fail> "<one-line summary>"
    ```
    Always use this script rather than hand-writing `.harness/gates.json` — it stamps the current commit hash automatically, which is what makes the gate detect stale reviews after new commits.
 5. Save the outcome to this project's native memory, so a future session doesn't re-litigate a decision already made or re-discover a finding already accepted:

@@ -1,21 +1,56 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git show:*)",
+      "Bash(git tag:*)",
+      "Bash(ls:*)",
+      "Bash(python3 /Users/bytenomad/Documents/Projects/_harness/scripts/harness_status.py:*)",
+      "Bash(python3 /Users/bytenomad/Documents/Projects/_harness/hooks/gate_write.py:*)"
+    ],
+    "deny": [
+      "Read(**/*.pem)",
+      "Read(**/id_rsa*)",
+      "Read(**/*_rsa)",
+      "Read(**/*.p12)",
+      "Read(**/credentials.json)",
+      "Read(**/service-account*.json)",
+      "Read(**/.env)",
+      "Read(**/.env.*)"
+    ]
+  },
   "hooks": {
-    "PreToolUse": [
+    "SessionStart": [
       {
-        "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/secrets_guard.py"
+            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/session_start.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/secrets_guard.py",
+            "timeout": 10
           }
         ]
       },
       {
-        "matcher": "Bash",
+        "matcher": "Bash|mcp__.*",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/release_gate.py"
+            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/release_gate.py",
+            "timeout": 10
           }
         ]
       }
@@ -25,7 +60,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/session_log.py"
+            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/session_log.py",
+            "timeout": 30
           }
         ]
       }

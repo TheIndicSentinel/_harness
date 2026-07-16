@@ -1,30 +1,24 @@
 #!/usr/bin/env python3
 """Stop hook: append a best-effort session summary row to <project>/docs/COST_LOG.md.
-Only active when cwd is under ~/Documents/Projects/ (the harness scope) — no-ops elsewhere.
-Token counts are parsed from the transcript JSONL when present; this is an estimate,
-not an authoritative dollar figure (use the native /cost command for that).
-Never blocks Stop — any parse failure is swallowed and the hook exits 0.
+Only active when cwd is under the harness's projects root (see
+gate_lib.projects_root(), overridable via CLAUDE_HARNESS_PROJECTS_ROOT) —
+no-ops elsewhere. Token counts are parsed from the transcript JSONL when
+present; this is an estimate, not an authoritative dollar figure — use the
+native `/cost` command, or enable OpenTelemetry (see docs/OTEL.md) for
+authoritative per-session metrics. Never blocks Stop — any parse failure is
+swallowed and the hook exits 0.
 """
 import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Optional, Tuple
+from typing import Tuple
 
-PROJECTS_ROOT = os.path.expanduser("~/Documents/Projects")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from gate_lib import project_root_for  # noqa: E402
+
 TABLE_HEADER = "| Date | Session ID | Duration | Est. tokens (in/out) |"
 TABLE_SEP = "|------|-----------|----------|------------------------|"
-
-
-def project_root_for(cwd: str) -> Optional[str]:
-    cwd = os.path.abspath(cwd)
-    if not cwd.startswith(PROJECTS_ROOT + os.sep):
-        return None
-    rest = cwd[len(PROJECTS_ROOT) + 1 :]
-    if not rest or rest.startswith("_harness"):
-        return None
-    top = rest.split(os.sep)[0]
-    return os.path.join(PROJECTS_ROOT, top)
 
 
 def summarize_transcript(transcript_path: str) -> Tuple[str, str]:

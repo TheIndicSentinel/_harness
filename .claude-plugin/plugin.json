@@ -1,0 +1,23 @@
+{
+  "name": "solo-founder-harness",
+  "description": "Full-lifecycle Claude Code harness for solo/indie founders building privacy-first, guardrail-first software: idea-brainstorm through market-research, PRD, QA, compliance, release, incident response, support triage, pricing, and weekly portfolio review — with a mechanically enforced privacy/QA/compliance release gate that a PreToolUse hook actually blocks ship commands on.",
+  "version": "0.1.0",
+  "author": {
+    "name": "bytenomad",
+    "email": "inerd1412@gmail.com"
+  },
+  "homepage": "https://github.com/TheIndicSentinel/_harness",
+  "repository": "https://github.com/TheIndicSentinel/_harness",
+  "license": "UNLICENSED",
+  "hooks": "./hooks/hooks.json",
+  "keywords": [
+    "solo-founder",
+    "indie-hacker",
+    "privacy-first",
+    "release-gate",
+    "sdlc",
+    "product-lifecycle",
+    "qa",
+    "compliance"
+  ]
+}

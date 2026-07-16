@@ -1,13 +1,26 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: block Edit/Write to a narrow list of sensitive filenames.
-Only active when cwd is under ~/Documents/Projects/ (the harness scope) — no-ops elsewhere.
+"""PreToolUse hook (matcher: Edit|Write|Bash): guards a narrow list of
+sensitive filenames. Only active when cwd is under the harness's projects
+root (see gate_lib.projects_root(), overridable via
+CLAUDE_HARNESS_PROJECTS_ROOT) — no-ops elsewhere.
+
+Semantics: "ask", not hard-deny — emits the official PreToolUse JSON decision
+so the user gets a permission prompt with the reason and can approve a
+genuinely-intended operation, instead of being told to leave Claude Code.
+- Edit/Write: asks when the target file matches a sensitive pattern.
+- Bash: asks when the command string mentions a sensitive-looking filename
+  (covers `cat foo.pem`, `cp x credentials.json`, redirects — heuristic and
+  deliberately over-broad, which is fine because a false positive costs one
+  extra prompt, not a blocked workflow).
 """
 import fnmatch
 import json
 import os
+import re
 import sys
 
-PROJECTS_ROOT = os.path.expanduser("~/Documents/Projects")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from gate_lib import projects_root  # noqa: E402
 
 BLOCKLIST = [
     "*.pem",
@@ -16,7 +29,27 @@ BLOCKLIST = [
     "*.p12",
     "service-account*.json",
     "credentials.json",
+    ".env",
+    ".env.*",
 ]
+
+
+def matches_blocklist(basename: str):
+    for pattern in BLOCKLIST:
+        if fnmatch.fnmatch(basename, pattern):
+            return pattern
+    return None
+
+
+def ask(reason: str) -> int:
+    print(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "ask",
+            "permissionDecisionReason": reason,
+        }
+    }))
+    return 0
 
 
 def main() -> int:
@@ -25,26 +58,42 @@ def main() -> int:
     except (json.JSONDecodeError, ValueError):
         return 0
 
-    cwd = payload.get("cwd") or os.getcwd()
-    if not os.path.abspath(cwd).startswith(PROJECTS_ROOT):
+    cwd = os.path.abspath(payload.get("cwd") or os.getcwd())
+    root = projects_root()
+    if cwd != root and not cwd.startswith(root + os.sep):
         return 0
 
+    tool_name = payload.get("tool_name", "") or ""
     tool_input = payload.get("tool_input", {}) or {}
+
+    if tool_name == "Bash":
+        command = tool_input.get("command", "") or ""
+        # Tokenize loosely; check the basename of each path-looking token.
+        for token in re.split(r"[\s;|&<>()]+", command):
+            token = token.strip("'\"`")
+            if not token or token.startswith("-"):
+                continue
+            pattern = matches_blocklist(os.path.basename(token))
+            if pattern:
+                return ask(
+                    f"Harness secrets guard: this command touches '{os.path.basename(token)}' "
+                    f"(matches sensitive pattern '{pattern}'). Approve only if this access "
+                    f"to key/credential material is intended."
+                )
+        return 0
+
     file_path = tool_input.get("file_path") or tool_input.get("path")
     if not file_path:
         return 0
 
     basename = os.path.basename(file_path)
-    for pattern in BLOCKLIST:
-        if fnmatch.fnmatch(basename, pattern):
-            print(
-                f"Blocked by harness secrets guard: '{basename}' matches sensitive-file "
-                f"pattern '{pattern}'. If this is genuinely safe to edit, do it manually "
-                f"outside Claude Code, or adjust the blocklist in "
-                f"~/Documents/Projects/_harness/hooks/secrets_guard.py.",
-                file=sys.stderr,
-            )
-            return 2
+    pattern = matches_blocklist(basename)
+    if pattern:
+        return ask(
+            f"Harness secrets guard: '{basename}' matches sensitive-file pattern "
+            f"'{pattern}'. Approve only if editing key/credential material is intended "
+            f"(blocklist: _harness/hooks/secrets_guard.py)."
+        )
 
     return 0
 
