@@ -527,7 +527,9 @@
         '<div class="field"><span class="fl">What this root represents</span><p>Not a project — the umbrella CLAUDE.md, hooks, and skills that apply to everything under ~/Documents/Projects/. Two branches hang off it: real projects it governs (saarthi, kavach), and the harness\'s own record of itself (_harness).</p></div>' +
         '<div class="field"><span class="fl">Right now</span><p>1 project shipping (saarthi, currently blocked from a real release by a dirty working tree, not a failing review), 1 project not yet started (kavach), and the harness itself at 13 skills, 8 commands, 3 subagents, and 4 deterministic hooks.</p></div>' +
         '<div class="field"><span class="fl">Click a project or _harness</span><p>Each expands into its own categories — gate history, docs, hooks, capabilities — down to individual leaf records.</p></div>' +
-        '</div>'
+        '</div>',
+      related: [{id:'saarthi', label:'saarthi'}, {id:'kavach', label:'kavach'}, {id:'harness', label:'_harness'}],
+      source: { file: 'CLAUDE.md (umbrella), settings.json / hooks.json', trust: 'local record', generated: '2026-07-17' }
     },
     saarthi: {
       title: 'saarthi',
@@ -542,7 +544,9 @@
           '</tbody></table></div>' +
         '<div class="field"><span class="fl">Since adoption</span><p>19 commits, 6 review rounds, 4 of the 10 standard harness docs present, 84 Stop-hook log rows across 3 real sessions, project health 1/6.</p></div>' +
         '<div class="field"><span class="fl">Click a category to the left</span><p>Gate History, Project Memory, and Features expand into individual entries — the rest, including Project Health, show their full record directly.</p></div>' +
-        '</div>'
+        '</div>',
+      related: [{id:'root', label:'THE HARNESS (fleet overview)'}, {id:'harness', label:'_harness (the tool itself)'}],
+      source: { file: '/harness-status saarthi', trust: 'local record', generated: '2026-07-17' }
     },
     kavach: {
       title: 'kavach',
@@ -553,7 +557,9 @@
         '<div class="field"><span class="fl">/harness-status now scans it anyway</span><p>The fleet-wide table reports it plainly: <code>0/10 docs · no required gates · 0 sessions · budget not set · health 1/6 · not a git repo</code>. Nothing errors on an empty project — it just reads as zero, honestly, the same "not yet" the project-health score is designed to show.</p></div>' +
         '<div class="field"><span class="fl">Already true, though</span><p>The umbrella CLAUDE.md and the four hooks apply the moment any session opens here — they\'re cwd-scoped, not tied to scaffolding. There\'s just nothing for them to act on yet.</p></div>' +
         '<div class="field"><span class="fl">Next step</span><p><code>/new-project</code> if starting fresh, or just begin building and run <code>/adopt-project</code> once there\'s a real codebase.</p></div>' +
-        '</div>'
+        '</div>',
+      related: [{id:'root', label:'THE HARNESS (fleet overview)'}, {id:'saarthi', label:'saarthi (mature comparison)'}],
+      source: { file: '/harness-status kavach', trust: 'local record', generated: '2026-07-17' }
     },
     harness: {
       title: '_harness',
@@ -563,7 +569,9 @@
         '<div class="field"><span class="fl">What it is now</span><p>13 skills, 8 commands, 3 subagents, and the 4 deterministic hooks that run beneath all of them — packaged as an installable Claude Code plugin (<code>solo-founder-harness</code>) as well as this machine\'s local symlink install, with a 7-file pytest suite and its own CI.</p></div>' +
         '<div class="field"><span class="fl">Own history</span><p>11 commits. 6e58bcf remains the largest single change (36 files) — the commits since it (CI gate, dirty-tree rejection, project health, this map) tightened rigor and visibility rather than adding surface area.</p></div>' +
         '<div class="field"><span class="fl">New this round</span><p>A CI-side release check for GitHub Actions, monthly token budgets, project-health scoring, custom release-command declarations, an explicit scope disclaimer, and a data-retention doc — see the branches below.</p></div>' +
-        '</div>'
+        '</div>',
+      related: [{id:'root', label:'THE HARNESS (fleet overview)'}, {id:'h-history', label:'Own History'}],
+      source: { file: '_harness git log, .claude-plugin/plugin.json', trust: 'local record', generated: '2026-07-17' }
     },
     gate: {
       title: 'Gate History',
@@ -574,7 +582,9 @@
     memory: {
       title: 'Project Memory',
       sub: 'Native per-project memory — not a harness invention',
-      html: '<p style="font-size:12.8px;color:var(--ink-soft);margin:0 0 4px;">privacy-guardrails-review writes here so a future session inherits context instead of re-deriving it. Click an entry.</p>'
+      html: '<p style="font-size:12.8px;color:var(--ink-soft);margin:0 0 4px;">privacy-guardrails-review writes here so a future session inherits context instead of re-deriving it. Click an entry.</p>',
+      related: [{id:'gate', label:'Gate History'}],
+      source: { file: '~/.claude/projects/-Users-bytenomad-Documents-Projects-saarthi/memory/', trust: 'local record' }
     },
     tokens: {
       title: 'Token Usage',
@@ -593,7 +603,9 @@
         '<polyline points="30,62.2 126.7,57.3 223.3,34.2 320,12.5" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
         '<g font-family="var(--font-mono)" font-size="8" fill="var(--ink-faint)"><text x="30" y="134" text-anchor="middle">07-13</text><text x="320" y="134" text-anchor="middle">07-16</text></g>' +
         '</svg></div>' +
-        '<p style="font-size:11.5px;color:var(--ink-faint);margin-top:8px;">No monthly budget set for saarthi — <code>budget_write.py</code> is available but unused here (project health flags this too).</p>'
+        '<p style="font-size:11.5px;color:var(--ink-faint);margin-top:8px;">No monthly budget set for saarthi — <code>budget_write.py</code> is available but unused here (project health flags this too).</p>',
+      related: [{id:'hk3', label:'_harness → session_log.py'}, {id:'h-monitoring', label:'_harness → Monitoring'}],
+      source: { file: 'saarthi/docs/COST_LOG.md', trust: 'local record', generated: '2026-07-17' }
     },
     docs: {
       title: 'Docs Adopted',
@@ -610,7 +622,9 @@
         '<div class="doc-tile missing"><b>COMPLIANCE.md</b><span>Missing</span></div>' +
         '<div class="doc-tile missing"><b>CONNECTORS.md</b><span>Missing (new doc)</span></div>' +
         '</div>' +
-        '<p style="font-size:12px;color:var(--ink-soft);margin-top:10px;">saarthi was adopted before the harness\'s template set expanded twice — re-running <code>/adopt-project</code> would fill these six in without touching anything that already exists.</p>'
+        '<p style="font-size:12px;color:var(--ink-soft);margin-top:10px;">saarthi was adopted before the harness\'s template set expanded twice — re-running <code>/adopt-project</code> would fill these six in without touching anything that already exists.</p>',
+      related: [{id:'health', label:'Project Health'}],
+      source: { file: 'saarthi/docs/', trust: 'local record', generated: '2026-07-17' }
     },
     engage: {
       title: 'How It Engages',
@@ -620,7 +634,9 @@
         '<div class="row"><span class="tag">Session-start</span><h5>Status line, now budget-aware</h5><p>Prints gate freshness, any ROADMAP "Now" items, and a token-budget alert at 50/80/100% (once per threshold per month) into the session\'s starting context. saarthi has no ROADMAP.md and no budget set, so only the gate line currently shows.</p></div>' +
         '<div class="row"><span class="tag">Deterministic</span><h5>4 hooks + permission rules, every tool call</h5><p>secrets_guard + release_gate on Edit/Write/Bash/MCP (now also rejecting a dirty working tree, not just a stale commit), session_log on Stop, session_start on SessionStart, plus an explicit allow/deny list in settings.json — plain Python and static rules, zero token cost.</p></div>' +
         '<div class="row"><span class="tag">On-demand</span><h5>13 skills, model-triggered</h5><p>Fire from conversational intent — "is this safe to ship" — not a slash command you must remember. saarthi has only exercised privacy-guardrails-review so far.</p></div>' +
-        '</div>'
+        '</div>',
+      related: [{id:'h-hooks', label:'_harness → Hooks & Gates'}, {id:'h-capabilities', label:'_harness → Capabilities'}],
+      source: { file: 'settings.json, hooks/hooks.json', trust: 'local record' }
     },
     decisions: {
       title: 'Standing Decisions',
@@ -631,7 +647,9 @@
         '<div class="d"><span class="v">Noted</span><p><b>PackUpdateWorker network path</b> — GET-only, signature-verified, just undisclosed in PRD.</p></div>' +
         '<div class="d"><span class="v">Corrected</span><p><b>CLAUDE.md overstates the stack</b> — Crashlytics documented but not actually present.</p></div>' +
         '<div class="d"><span class="v">Confirmed</span><p><b>SMS/READ_SMS removal</b> — genuinely clean, zero references.</p></div>' +
-        '</div>'
+        '</div>',
+      related: [{id:'m1', label:'Memory: review history'}, {id:'g6', label:'Current gate round'}],
+      source: { file: '~/.claude/projects/-Users-bytenomad-Documents-Projects-saarthi/memory/privacy_guardrails_review_2026-07-13.md', trust: 'local record' }
     },
     health: {
       title: 'Project Health',
@@ -653,12 +671,14 @@
       html: '<div class="fields">' +
         '<div class="field"><span class="fl">What\'s here</span><p>Nothing. No docs, no gate record, no sessions logged, not even git-initialized.</p></div>' +
         '<div class="field"><span class="fl">Next step</span><p><code>/new-project</code> to scaffold fresh, or start building and run <code>/adopt-project</code> once there\'s a real codebase.</p></div>' +
-        '</div>'
+        '</div>',
+      source: { file: '/harness-status kavach', trust: 'local record', generated: '2026-07-17' }
     },
     'h-history': {
       title: 'Own History',
       sub: '11 commits · the harness\'s own development',
-      html: '<p style="font-size:12.8px;color:var(--ink-soft);margin:0 0 4px;">From a single Projects-root CLAUDE.md to a 13-skill, plugin-packaged, CI-enforced, test-covered system. Click a commit for what changed and its scale.</p>'
+      html: '<p style="font-size:12.8px;color:var(--ink-soft);margin:0 0 4px;">From a single Projects-root CLAUDE.md to a 13-skill, plugin-packaged, CI-enforced, test-covered system. Click a commit for what changed and its scale.</p>',
+      source: { file: '_harness git log', trust: 'local record', generated: '2026-07-17' }
     },
     'h-hooks': {
       title: 'Hooks & Gates',
@@ -678,7 +698,9 @@
         '<div class="row"><span class="tag">Commands</span><h5>8 slash commands</h5><p><code>/new-project</code> · <code>/adopt-project</code> · <code>/harness-status</code> · <code>/ship</code> · <code>/cost-report</code> · <code>/weekly-review</code> · <code>/sunset-project</code> · <code>/harness-init</code></p></div>' +
         '<div class="row"><span class="tag">Subagents</span><h5>3 specialized researchers, all read-only</h5><p><code>security-privacy-auditor</code> (opus-tier, invoked by privacy-guardrails-review) · <code>market-researcher</code> (competitive research) · <code>growth-marketer</code> (GTM/launch research) — invoked by skills, not called directly.</p></div>' +
         '</div>' +
-        '<p style="font-size:12px;color:var(--ink-faint);margin-top:10px;">The harness now tests itself, too: 7 pytest files (gate logic, budgets, secrets guard, release gate, the CI check, docs consistency) run in their own GitHub Actions workflow — separate from the per-project CI template the harness ships to others.</p>'
+        '<p style="font-size:12px;color:var(--ink-faint);margin-top:10px;">The harness now tests itself, too: 7 pytest files (gate logic, budgets, secrets guard, release gate, the CI check, docs consistency) run in their own GitHub Actions workflow — separate from the per-project CI template the harness ships to others.</p>',
+      related: [{id:'h-hooks', label:'Hooks & Gates'}, {id:'h-distribution', label:'Distribution'}],
+      source: { file: 'skills/, commands/, agents/, tests/', trust: 'local record', generated: '2026-07-17' }
     },
     'h-distribution': {
       title: 'Distribution',
@@ -687,7 +709,9 @@
         '<div class="field"><span class="fl">Install as a plugin</span><p><code>/plugin marketplace add TheIndicSentinel/_harness</code><br><code>/plugin install solo-founder-harness</code></p></div>' +
         '<div class="field"><span class="fl">Dual-mode, deliberately</span><p>Local symlink install (this machine) and the plugin install both work off the same source — new content uses <code>${CLAUDE_PLUGIN_ROOT}</code> so it resolves under either, instead of a hardcoded path.</p></div>' +
         '<div class="field"><span class="fl">License</span><p>Currently a placeholder in plugin.json — not yet set for public reuse.</p></div>' +
-        '</div>'
+        '</div>',
+      related: [{id:'h-capabilities', label:'Capabilities'}],
+      source: { file: '.claude-plugin/plugin.json, .claude-plugin/marketplace.json', trust: 'local record' }
     },
     'h-monitoring': {
       title: 'Monitoring',
@@ -697,30 +721,49 @@
         '<div class="field"><span class="fl">Token budgets (new)</span><p><code>budget_write.py &lt;project_root&gt; &lt;monthly_tokens&gt;</code> sets a best-effort monthly ceiling computed from COST_LOG.md; <code>/harness-status</code> always shows the live percentage. Explicitly skippable (<code>--skip</code>) so "no budget" reads as a deliberate choice, not an oversight.</p></div>' +
         '<div class="field"><span class="fl">/harness-status</span><p>On-demand fleet-wide table — docs adopted, required gates, sessions, budget, project-health score, git cleanliness. One project or the whole environment.</p></div>' +
         '<div class="field"><span class="fl">Token/cost sources, honestly ranked (rewritten)</span><p>Four tiers, not one: (1) session_log.py\'s transcript estimate — this harness\'s default; (2) OpenTelemetry — richer, but Anthropic\'s own docs call its cost metric an <em>approximation</em>, not authoritative; (3) the Anthropic Admin API/Console usage report — the actual authoritative source, which this harness has no credentials to integrate with; (4) Claude subscription usage — a separate billing domain entirely. An earlier version of this doc called OTel "authoritative" — that was wrong and has been corrected.</p></div>' +
-        '</div>'
+        '</div>',
+      related: [{id:'hk3', label:'session_log.py'}, {id:'hk4', label:'session_start.py'}, {id:'tokens', label:'saarthi → Token Usage'}],
+      source: { file: 'hooks/session_start.py, hooks/budget_lib.py, docs/OTEL.md', trust: 'local record' }
     },
     h1: { title: 'e8d4ede', sub: 'Foundation', chip: 'pass',
-      fields: [['Change','Projects-root CLAUDE.md, /new-project, /cost-report, secrets-guard + session-log hooks.'],['Scale','7 files — the very first commit.']] },
+      fields: [['Change','Projects-root CLAUDE.md, /new-project, /cost-report, secrets-guard + session-log hooks.'],['Scale','7 files — the very first commit.']],
+      source: { file: '_harness git log', commit: 'e8d4ede', trust: 'local record' } },
     h2: { title: '76621bc', sub: 'Lifecycle + hard gate', chip: 'pass',
-      fields: [['Change','6 lifecycle skills, 3 research/audit subagents, the hard-block release gate and its shared gate library.'],['Scale','First time privacy-guardrails-review could mechanically block a ship.']] },
+      fields: [['Change','6 lifecycle skills, 3 research/audit subagents, the hard-block release gate and its shared gate library.'],['Scale','First time privacy-guardrails-review could mechanically block a ship.']],
+      related: [{id:'hk2', label:'release_gate.py (born here)'}],
+      source: { file: '_harness git log', commit: '76621bc', trust: 'local record' } },
     h3: { title: '6d40a24', sub: '/adopt-project', chip: 'pass',
-      fields: [['Change','Retrofits an existing project — additive-only, never overwrites.'],['Scale','This is what brought saarthi into the harness.']] },
+      fields: [['Change','Retrofits an existing project — additive-only, never overwrites.'],['Scale','This is what brought saarthi into the harness.']],
+      source: { file: '_harness git log', commit: '6d40a24', trust: 'local record' } },
     h4: { title: '77cd968', sub: '/harness-status', chip: 'pass',
-      fields: [['Change','Per-project and fleet-wide audit view.'],['Scale','The first "check everything at once" command.']] },
+      fields: [['Change','Per-project and fleet-wide audit view.'],['Scale','The first "check everything at once" command.']],
+      source: { file: '_harness git log', commit: '77cd968', trust: 'local record' } },
     h5: { title: '9fdfac2', sub: 'Model tuning + memory', chip: 'pass',
-      fields: [['Change','security-privacy-auditor moved to opus; chain-of-thought nudges on judgment calls; privacy-guardrails-review wired into native per-project memory.'],['Scale','Model cost matched to stakes for the first time.']] },
+      fields: [['Change','security-privacy-auditor moved to opus; chain-of-thought nudges on judgment calls; privacy-guardrails-review wired into native per-project memory.'],['Scale','Model cost matched to stakes for the first time.']],
+      related: [{id:'memory', label:'saarthi → Project Memory'}],
+      source: { file: '_harness git log', commit: '9fdfac2', trust: 'local record' } },
     h6: { title: '0d8f7ad', sub: 'Worked examples', chip: 'pass',
-      fields: [['Change','Input/output examples added to all 6 original skills.'],['Scale','Output-format consistency pass.']] },
+      fields: [['Change','Input/output examples added to all 6 original skills.'],['Scale','Output-format consistency pass.']],
+      source: { file: '_harness git log', commit: '0d8f7ad', trust: 'local record' } },
     h7: { title: '6e58bcf', sub: 'Plugin + multi-gate — the big one', chip: 'pass',
-      fields: [['Change','7 new skills (qa-review, compliance-review, incident-response, support-triage, pricing-strategy, release-notes, weekly-review), 3 new commands, a SessionStart monitoring hook, an opt-in multi-gate pipeline, and full Claude Code plugin packaging.'],['Scale','36 files changed, 939 insertions — the single largest commit in the harness\'s own history.']] },
+      fields: [['Change','7 new skills (qa-review, compliance-review, incident-response, support-triage, pricing-strategy, release-notes, weekly-review), 3 new commands, a SessionStart monitoring hook, an opt-in multi-gate pipeline, and full Claude Code plugin packaging.'],['Scale','36 files changed, 939 insertions — the single largest commit in the harness\'s own history.']],
+      related: [{id:'h-capabilities', label:'Capabilities'}, {id:'h-distribution', label:'Distribution'}],
+      source: { file: '_harness git log', commit: '6e58bcf', trust: 'local record' } },
     h8: { title: '88b05f4', sub: 'CI gate + test suite + budgets + scope', chip: 'pass',
-      fields: [['Change','A GitHub Actions release-gate check for projects that ship via CI, the harness\'s first pytest suite, monthly token budgets, and the README\'s explicit "Scope" disclaimer (Claude-Code-only, not a general Anthropic platform).'],['Scale','25 files, 915 insertions.']] },
+      fields: [['Change','A GitHub Actions release-gate check for projects that ship via CI, the harness\'s first pytest suite, monthly token budgets, and the README\'s explicit "Scope" disclaimer (Claude-Code-only, not a general Anthropic platform).'],['Scale','25 files, 915 insertions.']],
+      related: [{id:'h-rigor', label:'Release Rigor'}, {id:'h-scope', label:'Scope & Data'}, {id:'h-monitoring', label:'Monitoring (budgets)'}],
+      source: { file: '_harness git log', commit: '88b05f4', trust: 'local record' } },
     h9: { title: 'c2d0b3a', sub: 'Dirty-tree rejection + CI hardening', chip: 'pass',
-      fields: [['Change','release_gate.py now also blocks on an uncommitted working tree, not just a stale commit — closes the gap where HEAD matches the gate record but unreviewed local edits sit on top of it. CI supply-chain hardening and self-attestation gaps fixed.'],['Scale','24 files, 363 insertions.']] },
+      fields: [['Change','release_gate.py now also blocks on an uncommitted working tree, not just a stale commit — closes the gap where HEAD matches the gate record but unreviewed local edits sit on top of it. CI supply-chain hardening and self-attestation gaps fixed.'],['Scale','24 files, 363 insertions.']],
+      related: [{id:'h-rigor', label:'Release Rigor'}, {id:'hk2', label:'release_gate.py'}],
+      source: { file: '_harness git log', commit: 'c2d0b3a', trust: 'local record' } },
     h10: { title: 'f9b9482', sub: 'Project health + custom release commands', chip: 'pass',
-      fields: [['Change','harness_status.py now scores each project\'s operational readiness (CI wired, release command documented, budget decided, etc.), and gate_write.py accepts project-declared custom release commands beyond the built-in patterns.'],['Scale','17 files, 604 insertions.']] },
+      fields: [['Change','harness_status.py now scores each project\'s operational readiness (CI wired, release command documented, budget decided, etc.), and gate_write.py accepts project-declared custom release commands beyond the built-in patterns.'],['Scale','17 files, 604 insertions.']],
+      related: [{id:'health', label:'saarthi → Project Health'}],
+      source: { file: '_harness git log', commit: 'f9b9482', trust: 'local record' } },
     h11: { title: 'a9d807a', sub: 'Mind-tree UI snapshot', chip: 'pass',
-      fields: [['Change','This map — a self-contained HTML snapshot of the harness for external review. No runtime coupling to the harness: it reads nothing live and enforces nothing.'],['Scale','1 file. Rebuilt in this round with provenance stamping, ARIA tree semantics, deep-linkable state, and per-project ship-readiness rollups.']] },
+      fields: [['Change','This map — a self-contained HTML snapshot of the harness for external review. No runtime coupling to the harness: it reads nothing live and enforces nothing.'],['Scale','1 file. Rebuilt in this round with provenance stamping, ARIA tree semantics, deep-linkable state, and per-project ship-readiness rollups.']],
+      source: { file: '_harness git log', commit: 'a9d807a', trust: 'local record' } },
     hk1: { title: 'secrets_guard.py', sub: 'PreToolUse · Edit · Write · Bash', chip: 'mid',
       fields: [
         ['Trigger','Edit, Write, or Bash tool calls, only when cwd is under the harness projects root.'],
@@ -777,12 +820,15 @@
         '<div class="field"><span class="fl">Scope disclaimer (new)</span><p>This is a Claude-Code-only solo-founder harness — not a general Anthropic governance or monitoring platform. No visibility into the Messages API, Bedrock/Vertex, Claude.ai, Claude Desktop, or MCP used outside Claude Code. The release gate only sees Bash/MCP calls made through Claude Code.</p></div>' +
         '<div class="field"><span class="fl">Data retention (new doc)</span><p>Exactly what the harness itself stores: gate records and a token budget number in <code>.harness/</code>, a session/cost log in <code>docs/COST_LOG.md</code> — no code, no prompts, no user data. Conversation content lives only in Claude Code\'s own transcript storage, which this harness doesn\'t manage or duplicate.</p></div>' +
         '<div class="field"><span class="fl">Clearing it</span><p>Delete <code>&lt;project&gt;/.harness/</code> to reset gates and budget for one project. Transcripts/memory live under <code>~/.claude/</code>, outside the harness\'s control.</p></div>' +
-        '</div>'
+        '</div>',
+      related: [{id:'h-rigor', label:'Release Rigor'}, {id:'m2', label:'saarthi → future_backend_scope.md'}],
+      source: { file: 'README.md (Scope section), docs/DATA_RETENTION.md', trust: 'local record' }
     },
     features: {
       title: 'Features Worked On',
       sub: '5 real commits, each traced through the harness',
-      html: '<p style="font-size:12.8px;color:var(--ink-soft);margin:0 0 4px;">Not every commit gets its own gate record — one is shown here specifically because it doesn\'t, and that\'s worth seeing too. Click a feature for prompt → skill → response → what the harness actually saved.</p>'
+      html: '<p style="font-size:12.8px;color:var(--ink-soft);margin:0 0 4px;">Not every commit gets its own gate record — one is shown here specifically because it doesn\'t, and that\'s worth seeing too. Click a feature for prompt → skill → response → what the harness actually saved.</p>',
+      related: [{id:'gate', label:'Gate History'}]
     },
     f1: { title: '9-lang memory extraction', sub: 'commit a07a7e4 · gate round 6', chip: 'pass',
       html: '<div class="pipeline-mini">' +
@@ -790,55 +836,75 @@
         '<div class="pipe-stage"><span class="stage-lbl">Skill</span><p>privacy-guardrails-review — bundled into gate round 6 (816b574).<span class="cite">privacy_guardrails_review_2026-07-13.md</span></p></div>' +
         '<div class="pipe-stage"><span class="stage-lbl">Response</span><p>Extraction added in ChatRepositoryImpl.kt across all 9 languages; writes still routed only through persistMemoryFact() into the local Room DB.<span class="cite">commit a07a7e4</span></p></div>' +
         '</div>' +
-        '<div class="savings-block"><p><b>Saved:</b> the review didn\'t re-derive a privacy rule for 9 new language paths — it checked each against the rule already settled in round 3 ("metadata is fine; message bodies/PII values are not"), rather than re-litigating it from scratch.</p></div>' },
+        '<div class="savings-block"><p><b>Saved:</b> the review didn\'t re-derive a privacy rule for 9 new language paths — it checked each against the rule already settled in round 3 ("metadata is fine; message bodies/PII values are not"), rather than re-litigating it from scratch.</p></div>',
+      related: [{id:'g6', label:'Gate round 6 (816b574)'}],
+      source: { file: 'memory: privacy_guardrails_review_2026-07-13.md', commit: 'a07a7e4', trust: 'local record' } },
     f2: { title: 'Download resume + HTTP 416', sub: 'commit ba832a3 · gate round 6', chip: 'pass',
       html: '<div class="pipeline-mini">' +
         '<div class="pipe-stage"><span class="stage-lbl">Prompt</span><p>Robust resume after app kill mid-download, plus HTTP 416 handling.<span class="cite">reconstructed from commit message</span></p></div>' +
         '<div class="pipe-stage"><span class="stage-lbl">Skill</span><p>privacy-guardrails-review — bundled into gate round 6 (816b574).<span class="cite">privacy_guardrails_review_2026-07-13.md</span></p></div>' +
         '<div class="pipe-stage"><span class="stage-lbl">Response</span><p>New DebugLogger.log() calls added, interpolating only modelId and byte counts.<span class="cite">commit ba832a3</span></p></div>' +
         '</div>' +
-        '<div class="savings-block"><p><b>Saved:</b> the audit scoped to just the new log lines this feature introduced, not a re-read of the whole download subsystem — confirmed "no new network calls introduced beyond the existing model-download path" rather than re-verifying the entire path.</p></div>' },
+        '<div class="savings-block"><p><b>Saved:</b> the audit scoped to just the new log lines this feature introduced, not a re-read of the whole download subsystem — confirmed "no new network calls introduced beyond the existing model-download path" rather than re-verifying the entire path.</p></div>',
+      related: [{id:'g6', label:'Gate round 6 (816b574)'}],
+      source: { file: 'memory: privacy_guardrails_review_2026-07-13.md', commit: 'ba832a3', trust: 'local record' } },
     f3: { title: 'No-Crashlytics + log sharing', sub: 'commit d1694fa · gate round 5 · v1.0.30', chip: 'pass',
       html: '<div class="pipeline-mini">' +
         '<div class="pipe-stage"><span class="stage-lbl">Prompt</span><p>Let users share their debug log for support without adding Crashlytics; prefer on-device voice recognition.<span class="cite">reconstructed from commit message</span></p></div>' +
         '<div class="pipe-stage"><span class="stage-lbl">Skill</span><p>privacy-guardrails-review — gate round 5.<span class="cite">privacy_guardrails_review_2026-07-13.md</span></p></div>' +
         '<div class="pipe-stage"><span class="stage-lbl">Response</span><p>FileProvider + DebugLogger.shareableUri() added (user still taps Send); voice recognition now prefers the on-device model.<span class="cite">commit d1694fa</span></p></div>' +
         '</div>' +
-        '<div class="savings-block"><p><b>Saved:</b> PRIVACY_POLICY.md\'s claims were checked against the actual code as part of the same review pass — catching doc/code drift as a byproduct, instead of a separate documentation audit.</p></div>' },
+        '<div class="savings-block"><p><b>Saved:</b> PRIVACY_POLICY.md\'s claims were checked against the actual code as part of the same review pass — catching doc/code drift as a byproduct, instead of a separate documentation audit.</p></div>',
+      related: [{id:'g5', label:'Gate round 5 (d1694fa)'}],
+      source: { file: 'memory: privacy_guardrails_review_2026-07-13.md', commit: 'd1694fa', trust: 'local record' } },
     f4: { title: 'Localization + quick-action', sub: 'commit 5bf5ac3 · gate round 4', chip: 'pass',
       html: '<div class="pipeline-mini">' +
         '<div class="pipe-stage"><span class="stage-lbl">Prompt</span><p>Full localization across 11 languages; add a home-screen quick action that auto-sends.<span class="cite">reconstructed from commit message</span></p></div>' +
         '<div class="pipe-stage"><span class="stage-lbl">Skill</span><p>privacy-guardrails-review — gate round 4.<span class="cite">privacy_guardrails_review_2026-07-13.md</span></p></div>' +
         '<div class="pipe-stage"><span class="stage-lbl">Response</span><p>Localization shipped; new auto-send path added to the home screen.<span class="cite">commit 5bf5ac3</span></p></div>' +
         '</div>' +
-        '<div class="savings-block"><p><b>Saved, verbatim:</b> "Don\'t re-litigate either closed finding; only re-flag if new commits touch saarthi.publicLog, DebugLogger..." — the review skipped re-checking the already-closed privacy-log finding entirely and spent its effort only on the one genuinely new attack surface.</p></div>' },
+        '<div class="savings-block"><p><b>Saved, verbatim:</b> "Don\'t re-litigate either closed finding; only re-flag if new commits touch saarthi.publicLog, DebugLogger..." — the review skipped re-checking the already-closed privacy-log finding entirely and spent its effort only on the one genuinely new attack surface.</p></div>',
+      related: [{id:'g4', label:'Gate round 4 (5bf5ac3)'}, {id:'m1', label:'Memory: review history'}],
+      source: { file: 'memory: privacy_guardrails_review_2026-07-13.md', commit: '5bf5ac3', trust: 'local record' } },
     f5: { title: 'Auto-select AI model', sub: 'commit 9398ed1 · no individual gate record', chip: 'mid',
       html: '<div class="pipeline-mini">' +
         '<div class="pipe-stage"><span class="stage-lbl">Prompt</span><p>Auto-select the AI model on first run, skip the picker.<span class="cite">reconstructed from commit message</span></p></div>' +
         '<div class="pipe-stage"><span class="stage-lbl">Skill</span><p class="skill-none">None logged — this commit landed while the gate still read FAIL, between 6adc439 and 462d227.<span class="cite">git log, gate history</span></p></div>' +
         '<div class="pipe-stage"><span class="stage-lbl">Response</span><p>Onboarding flow updated to auto-select.<span class="cite">commit 9398ed1</span></p></div>' +
         '</div>' +
-        '<div class="gap-block"><b>Shown deliberately:</b> not every commit has a review record, and this one doesn\'t. The deterministic hooks were still active regardless — release_gate would have blocked any publish command in this window (gate was FAIL), but ordinary commits like this one were never gated in the first place.</div>' },
+        '<div class="gap-block"><b>Shown deliberately:</b> not every commit has a review record, and this one doesn\'t. The deterministic hooks were still active regardless — release_gate would have blocked any publish command in this window (gate was FAIL), but ordinary commits like this one were never gated in the first place.</div>',
+      related: [{id:'g1', label:'Gate round 1 (6adc439, FAIL — the window this landed in)'}],
+      source: { file: 'git log (no gate/memory record exists for this commit)', commit: '9398ed1', trust: 'local record' } },
     g1: { title: '6adc439', sub: 'Gate round 1 · FAIL', chip: 'fail',
       fields: [['Input','Privacy/guardrails review requested at this commit.'],
         ['Harness','Code audit found PUBLIC_DEBUG_LOG defaults true in the release APK workflow (AAB workflow already had it off).'],
-        ['Output','Gate recorded FAIL. Chat text, RAG previews, and extracted PII written to world-readable public Downloads.']] },
+        ['Output','Gate recorded FAIL. Chat text, RAG previews, and extracted PII written to world-readable public Downloads.']],
+      related: [{id:'f5', label:'Feature: auto-select AI model (landed during this FAIL window)'}, {id:'g2', label:'Next: 462d227'}],
+      source: { file: 'memory: privacy_guardrails_review_2026-07-13.md (gates.json only retains the current record, not history)', commit: '6adc439', trust: 'local record' } },
     g2: { title: '462d227', sub: 'Gate round 2 · Partial fix', chip: 'mid',
       fields: [['Input','Fix attempt for the round-1 FAIL finding.'],
         ['Harness','Default flipped to false; flag added to the two release workflows.'],
-        ['Output','Missed a third workflow (build_apk.yml) with its own disclosed debug-log behavior — caught on re-review, not shipped as final.']] },
+        ['Output','Missed a third workflow (build_apk.yml) with its own disclosed debug-log behavior — caught on re-review, not shipped as final.']],
+      related: [{id:'g1', label:'Previous: 6adc439 (FAIL)'}, {id:'g3', label:'Next: 6c0ca87 (PASS)'}],
+      source: { file: 'memory: privacy_guardrails_review_2026-07-13.md', commit: '462d227', trust: 'local record' } },
     g3: { title: '6c0ca87', sub: 'Gate round 3 · PASS', chip: 'pass',
       fields: [['Input','User-requested independent re-review — not just a re-check of the diff.'],
         ['Harness','Found two more raw-content log sites the first fix missed (ReminderManager.kt, RagDocumentRepository.kt).'],
-        ['Output','Both redacted to length-only logging. Gate flips to PASS — first clean state.']] },
+        ['Output','Both redacted to length-only logging. Gate flips to PASS — first clean state.']],
+      related: [{id:'m1', label:'Memory: review history'}, {id:'g4', label:'Next: 5bf5ac3'}],
+      source: { file: 'memory: privacy_guardrails_review_2026-07-13.md', commit: '6c0ca87', trust: 'local record' } },
     g4: { title: '5bf5ac3', sub: 'Gate round 4 · PASS', chip: 'pass',
       fields: [['Input','Localization pass + a new home-screen auto-send quick action.'],
         ['Harness','Re-scoped specifically to the new auto-send path for deep-link injection risk.'],
-        ['Output','Clean — no navDeepLink/intent-filter reaches it; prior redaction confirmed still intact.']] },
+        ['Output','Clean — no navDeepLink/intent-filter reaches it; prior redaction confirmed still intact.']],
+      related: [{id:'f4', label:'Feature: localization + quick-action'}, {id:'g5', label:'Next: d1694fa'}],
+      source: { file: 'memory: privacy_guardrails_review_2026-07-13.md', commit: '5bf5ac3', trust: 'local record' } },
     g5: { title: 'd1694fa', sub: 'Gate round 5 · PASS · v1.0.30', chip: 'pass',
       fields: [['Input','A deliberate no-Crashlytics decision, a FileProvider debug-log-sharing feature, on-device-first voice recognition.'],
         ['Harness','Checked FileProvider grant scope, voice fallback\'s data-egress direction, cross-checked PRIVACY_POLICY.md against code.'],
-        ['Output','PASS — shipped as v1.0.30 to Internal Testing.']] },
+        ['Output','PASS — shipped as v1.0.30 to Internal Testing.']],
+      related: [{id:'f3', label:'Feature: no-Crashlytics + log share'}, {id:'g6', label:'Next: 816b574 (current)'}],
+      source: { file: 'memory: privacy_guardrails_review_2026-07-13.md', commit: 'd1694fa', trust: 'local record' } },
     g6: { title: '816b574', sub: 'Gate round 6 · PASS · v1.0.34 · current', chip: 'pass',
       fields: [['Input','Memory extraction extended to all 9 languages, notification PendingIntents added, download-resume/HTTP-416 fix.'],
         ['Harness','Full re-scan of the new code paths against every standing finding.'],
@@ -847,10 +913,14 @@
       source: { file: 'saarthi/.harness/gates.json', commit: '816b574', trust: 'local record', generated: '2026-07-16T09:33:53Z' } },
     m1: { title: 'privacy_guardrails_review_2026-07-13.md', sub: 'Review history & standing findings', chip: 'pass',
       html: '<p style="font-size:12.6px;color:var(--ink-soft);">The full six-round history, plus the accepted-risk list — kept as one running record so each review reads the last verdict instead of starting from zero.</p>' +
-        '<div class="quote-block"><blockquote>"Don\'t re-litigate either closed finding; only re-flag if new commits touch saarthi.publicLog, DebugLogger, add a DebugLogger.log() call with unstripped user content, or add a deep-link/intent-filter that could reach the assistant?msg= route."</blockquote><span class="src">— verbatim, this file</span></div>' },
+        '<div class="quote-block"><blockquote>"Don\'t re-litigate either closed finding; only re-flag if new commits touch saarthi.publicLog, DebugLogger, add a DebugLogger.log() call with unstripped user content, or add a deep-link/intent-filter that could reach the assistant?msg= route."</blockquote><span class="src">— verbatim, this file</span></div>',
+      related: [{id:'gate', label:'Gate History'}, {id:'g6', label:'Current pass (816b574)'}],
+      source: { file: '~/.claude/projects/-Users-bytenomad-Documents-Projects-saarthi/memory/privacy_guardrails_review_2026-07-13.md', trust: 'local record' } },
     m2: { title: 'future_backend_scope.md', sub: "Founder's stated direction", chip: 'neutral',
       html: '<div class="quote-block"><blockquote>"Saarthi may add a server later for app-management infra (crash reports, etc.) — never for user conversation data, and never added silently."</blockquote><span class="src">— verbatim, this file</span></div>' +
-        '<p style="font-size:12.3px;color:var(--ink-soft);">A standing constraint for any future proposal, not tied to one specific review.</p>' }
+        '<p style="font-size:12.3px;color:var(--ink-soft);">A standing constraint for any future proposal, not tied to one specific review.</p>',
+      related: [{id:'h-scope', label:'_harness → Scope & Data'}],
+      source: { file: '~/.claude/projects/-Users-bytenomad-Documents-Projects-saarthi/memory/future_backend_scope.md', trust: 'local record' } }
   };
 
   var state = { project: 'saarthi', expandedCat: 'gate', selectedLeaf: 'g6', rootSelected: false, focusId: null };
