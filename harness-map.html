@@ -1,4 +1,10 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Harness — Mind Tree</title>
+<meta name="description" content="Interactive map of the solo-founder Claude Code harness: projects it governs, gate history, hooks, and capabilities.">
 <style>
   :root {
     --bg: #F3F5F4; --surface: #FFFFFF; --surface-sunken: #E9EDEC;
@@ -62,21 +68,41 @@
   code, .mono { font-family: var(--font-mono); }
   h1,h2,h3,h4 { font-family: var(--font-display); font-weight: 800; margin: 0; text-wrap: balance; }
   .eyebrow { font-family: var(--font-display); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-ink); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; padding: 0; margin: -1px; }
 
   .wrap { max-width: 1400px; margin: 0 auto; padding: 32px 28px 64px; }
   header.top { margin-bottom: 20px; }
   header.top h1 { font-size: clamp(24px, 3.4vw, 32px); }
   header.top p { font-family: var(--font-body); color: var(--ink-soft); font-size: 14.5px; margin: 6px 0 0; max-width: 60ch; }
 
-  .fleet-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0 24px; }
+  .provenance { margin: 12px 0 0; font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); border: 1px dashed var(--line-strong); border-radius: 8px; padding: 8px 12px; background: var(--surface-sunken); }
+  .provenance summary { cursor: pointer; color: var(--ink-soft); }
+  .provenance summary code { color: var(--accent-ink); }
+  .provenance p { margin: 8px 0 0; font-family: var(--font-body); font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; }
+
+  .fleet-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0 14px; }
   @media (max-width: 760px) { .fleet-row { grid-template-columns: 1fr; } }
-  .fleet-pill { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 12px 15px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 10px; }
+  .fleet-pill { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 12px 15px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; }
+  .fleet-pill:hover { border-color: var(--line-strong); }
+  .fleet-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .fleet-pill .fp-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   .fleet-pill .fp-dot.good { background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); }
   .fleet-pill .fp-dot.neutral { background: var(--none); }
   .fleet-pill .fp-dot.meta { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .fleet-pill .fp-body { flex: 1; min-width: 0; }
   .fleet-pill b { font-family: var(--font-display); font-size: 12.5px; display: block; }
   .fleet-pill span { font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); }
+  .fleet-pill .fp-chip { flex-shrink: 0; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 0 0 20px; padding: 9px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-family: var(--font-display); font-size: 11px; color: var(--ink-soft); }
+  .legend .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend .legend-swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; position: relative; }
+  .legend .legend-swatch.pass { background: var(--good); }
+  .legend .legend-swatch.mid { background: var(--warn); }
+  .legend .legend-swatch.fail { background: var(--critical); }
+  .legend .legend-swatch.neutral { background: var(--none); }
+  .legend .legend-swatch::after { content: attr(data-glyph); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 7px; line-height: 1; color: var(--surface); font-weight: 900; }
+  .legend .legend-meta-swatch { width: 16px; height: 12px; border: 1.5px dashed var(--line-strong); border-radius: 5px; flex-shrink: 0; }
 
   .stage { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
   @media (max-width: 1000px) { .stage { grid-template-columns: 1fr; } }
@@ -125,6 +151,7 @@
     border-radius: 10px;
     box-shadow: var(--shadow);
   }
+  .node-root.active-root { box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow); }
   .node-project {
     background: var(--surface);
     border: 1.5px solid var(--line-strong);
@@ -157,6 +184,7 @@
   .node-cat .badge.good { background: var(--good-soft); color: var(--good); }
   .node-cat .badge.mixed { background: var(--warn-soft); color: var(--warn); }
   .node-cat .badge.neutral { background: var(--none-soft); color: var(--none); }
+  .node-cat .chev { font-size: 9px; color: var(--ink-faint); margin-left: 1px; }
 
   .node-leaf {
     background: var(--surface);
@@ -168,7 +196,8 @@
     color: var(--ink-soft);
     box-shadow: var(--shadow);
   }
-  .node-leaf .chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .node-leaf .chip-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; position: relative; }
+  .node-leaf .chip-dot::after { content: attr(data-glyph); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 7px; line-height: 1; color: var(--surface); font-weight: 900; }
   .node-leaf .chip-dot.fail { background: var(--critical); }
   .node-leaf .chip-dot.mid { background: var(--warn); }
   .node-leaf .chip-dot.pass { background: var(--good); }
@@ -202,6 +231,7 @@
   .chip.fail { background: var(--critical-soft); color: var(--critical); }
   .chip.pass { background: var(--good-soft); color: var(--good); }
   .chip.mid { background: var(--warn-soft); color: var(--warn); }
+  .chip.neutral { background: var(--none-soft); color: var(--ink-faint); }
 
   .fields { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
   .field .fl { font-family: var(--font-display); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 4px; }
@@ -243,6 +273,14 @@
   .doc-tile span { font-family: var(--font-display); font-size: 9.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--good); }
   .doc-tile.existing { border-color: var(--line-strong); background: var(--surface-sunken); }
   .doc-tile.existing span { color: var(--ink-faint); }
+  .doc-tile.missing { border-color: var(--warn); background: var(--warn-soft); }
+  .doc-tile.missing span { color: var(--warn); }
+
+  .gate-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11.8px; }
+  .gate-table th, .gate-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  .gate-table th { font-family: var(--font-display); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; }
+  .gate-table td.status-pass { color: var(--good); font-weight: 700; }
+  .gate-table td.status-none { color: var(--ink-faint); }
 
   .token-stats { display: flex; gap: 18px; margin: 14px 0; }
   .token-stats div b { display: block; font-family: var(--font-display); font-size: 19px; font-variant-numeric: tabular-nums; }
@@ -250,34 +288,74 @@
   .mini-chart { margin-top: 10px; }
 
   footer { max-width: 1400px; margin: 32px auto 0; padding: 0 28px; border-top: 1px solid var(--line); padding-top: 20px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-faint); }
-</style>
 
+  .print-index { display: none; }
+  @media print {
+    body { background: #fff; color: #000; }
+    .hint, .legend, .provenance, .tree-frame, footer { display: none; }
+    .stage { grid-template-columns: 1fr; }
+    .panel { position: static; box-shadow: none; border: 1px solid #000; }
+    .print-index { display: block; margin-top: 20px; font-size: 11px; }
+    .print-index h2 { font-size: 14px; margin: 16px 0 6px; }
+    .print-index ul { margin: 0 0 8px; padding-left: 18px; }
+  }
+</style>
+</head>
+<body>
 <div class="wrap">
   <header class="top">
     <span class="eyebrow">Granular · click to drill down</span>
     <h1>The Harness — Mind Tree</h1>
     <p>Root → environment → what the harness did → the actual record. Click any branch; nothing here is a placeholder.</p>
+    <details class="provenance">
+      <summary>Generated 2026-07-17 · commit <code>a9d807a</code> — hand-assembled snapshot, not live data</summary>
+      <p>This page is a manually captured snapshot of the harness and the projects it governs, not generated by a script. Numbers drift as commits land. To refresh it: re-run <code>/harness-status</code> for each project, re-read <code>.harness/gates.json</code> and the privacy-guardrails-review memory file for gate history, and re-derive commit/feature entries from <code>git log</code>. No automated regeneration pipeline is wired up yet — treat every figure here as "true as of the commit above," not as a live dashboard.</p>
+    </details>
   </header>
 
-  <div class="fleet-row">
-    <div class="fleet-pill"><span class="fp-dot good"></span><div><b>saarthi</b><span>gate pass, but dirty tree blocks ship · health 1/6</span></div></div>
-    <div class="fleet-pill"><span class="fp-dot neutral"></span><div><b>kavach</b><span>0/10 docs · health 1/6 · not started</span></div></div>
-    <div class="fleet-pill"><span class="fp-dot meta"></span><div><b>_harness</b><span>13 skills · CI gate · budgets · plugin</span></div></div>
+  <div class="fleet-row" id="fleet-row">
+    <button class="fleet-pill" data-project="saarthi" aria-label="saarthi — select project, currently blocked from shipping">
+      <span class="fp-dot good" aria-hidden="true"></span>
+      <span class="fp-body"><b>saarthi</b><span>health 1/6 · gate PASS @816b574</span></span>
+      <span class="chip fail fp-chip">Blocked</span>
+    </button>
+    <button class="fleet-pill" data-project="kavach" aria-label="kavach — select project, ship would be blocked, no gate record exists">
+      <span class="fp-dot neutral" aria-hidden="true"></span>
+      <span class="fp-body"><b>kavach</b><span>0/10 docs · no gate record</span></span>
+      <span class="chip fail fp-chip">Blocked</span>
+    </button>
+    <button class="fleet-pill" data-project="harness" aria-label="_harness — select the harness itself, exempt from gating by design">
+      <span class="fp-dot meta" aria-hidden="true"></span>
+      <span class="fp-body"><b>_harness</b><span>13 skills · 4 hooks · CI gate</span></span>
+      <span class="chip neutral fp-chip">Exempt</span>
+    </button>
+  </div>
+
+  <div class="legend" role="note" aria-label="Status legend">
+    <span class="legend-item"><span class="legend-swatch pass" data-glyph="&#10003;" aria-hidden="true"></span>Pass</span>
+    <span class="legend-item"><span class="legend-swatch mid" data-glyph="&#8211;" aria-hidden="true"></span>Partial / mixed</span>
+    <span class="legend-item"><span class="legend-swatch fail" data-glyph="&#10005;" aria-hidden="true"></span>Fail</span>
+    <span class="legend-item"><span class="legend-swatch neutral" data-glyph="&#183;" aria-hidden="true"></span>Informational / not gated</span>
+    <span class="legend-item"><span class="legend-meta-swatch" aria-hidden="true"></span>Dashed border = meta, excluded from gating</span>
+    <span class="legend-item"><span aria-hidden="true">▸</span>Expandable branch</span>
+    <span class="legend-item">Chip = would release_gate.py allow a ship right now</span>
   </div>
 
   <div class="stage">
     <div class="tree-frame">
-      <div class="tree-canvas" id="canvas">
+      <div class="tree-canvas" id="canvas" role="tree" aria-label="Harness mind tree">
         <svg viewBox="0 0 1000 640" preserveAspectRatio="none" id="svg-layer"></svg>
         <!-- nodes injected by JS -->
-        <span class="hint">⌁ click a branch to expand · click a leaf for detail</span>
+        <span class="hint">⌁ click or Enter a branch to expand · Esc collapses · click a leaf for detail</span>
       </div>
     </div>
 
-    <aside class="panel" id="panel">
+    <aside class="panel" id="panel" role="region" aria-label="Selection detail" aria-live="polite" aria-atomic="true">
       <div class="p-empty">Select a branch on the left.</div>
     </aside>
   </div>
+
+  <div class="print-index" id="print-index"></div>
 
   <footer>
     <span>The Harness — private to TheIndicSentinel</span>
@@ -291,34 +369,42 @@
   var canvas = document.getElementById('canvas');
   var svg = document.getElementById('svg-layer');
   var panel = document.getElementById('panel');
+  var printIndex = document.getElementById('print-index');
 
-  var ROOT = { x: 60, y: 320, label: 'THE HARNESS' };
+  var COL = { root: 60, project: 250, cat: 520, leaf: 800 };
+  var ROOT = { x: COL.root, y: 320, label: 'THE HARNESS' };
+
+  var STATUS_WORD = { pass: 'pass', fail: 'fail', mid: 'partial', neutral: 'informational' };
+  var STATUS_GLYPH = { pass: '✓', fail: '✕', mid: '–', neutral: '·' };
 
   var PROJECTS = [
-    { id: 'saarthi', x: 250, y: 140, label: 'saarthi',  kind: 'product' },
-    { id: 'kavach',  x: 250, y: 320, label: 'kavach',   kind: 'empty' },
-    { id: 'harness', x: 250, y: 500, label: '_harness', kind: 'meta' }
+    { id: 'saarthi', label: 'saarthi',  kind: 'product' },
+    { id: 'kavach',  label: 'kavach',   kind: 'empty' },
+    { id: 'harness', label: '_harness', kind: 'meta' }
   ];
 
   var CATS_BY_PROJECT = {
     saarthi: [
-      { id: 'gate',      x: 520, y: 20,  label: 'Gate History',      badge: 'good',    badgeTxt: '6', hasLeaves: true },
-      { id: 'memory',    x: 520, y: 106, label: 'Project Memory',    badge: 'neutral', badgeTxt: '2', hasLeaves: true },
-      { id: 'features',  x: 520, y: 191, label: 'Features Worked On',badge: 'good',   badgeTxt: '5', hasLeaves: true },
-      { id: 'health',    x: 520, y: 277, label: 'Project Health',    badge: 'mixed',   badgeTxt: '1/6', hasLeaves: false },
-      { id: 'tokens',    x: 520, y: 363, label: 'Token Usage',       badge: 'neutral', badgeTxt: '',  hasLeaves: false },
-      { id: 'docs',      x: 520, y: 449, label: 'Docs Adopted',      badge: 'mixed',   badgeTxt: '4/10', hasLeaves: false },
-      { id: 'engage',    x: 520, y: 534, label: 'How It Engages',    badge: 'neutral', badgeTxt: '',  hasLeaves: false },
-      { id: 'decisions', x: 520, y: 620, label: 'Standing Decisions',badge: 'mixed',   badgeTxt: '5', hasLeaves: false }
+      { id: 'gate',      label: 'Gate History',       badge: 'good',    badgeTxt: '6',    hasLeaves: true },
+      { id: 'memory',    label: 'Project Memory',     badge: 'neutral', badgeTxt: '2',    hasLeaves: true },
+      { id: 'features',  label: 'Features Worked On', badge: 'good',    badgeTxt: '5',    hasLeaves: true },
+      { id: 'health',    label: 'Project Health',     badge: 'mixed',   badgeTxt: '1/6',  hasLeaves: false },
+      { id: 'tokens',    label: 'Token Usage',        badge: 'neutral', badgeTxt: '',     hasLeaves: false },
+      { id: 'docs',      label: 'Docs Adopted',       badge: 'mixed',   badgeTxt: '4/10', hasLeaves: false },
+      { id: 'engage',    label: 'How It Engages',     badge: 'neutral', badgeTxt: '',     hasLeaves: false },
+      { id: 'decisions', label: 'Standing Decisions', badge: 'mixed',   badgeTxt: '5',    hasLeaves: false }
     ],
-    kavach: [],
+    kavach: [
+      { id: 'k-status', label: 'Status', badge: 'neutral', badgeTxt: '', hasLeaves: false }
+    ],
     harness: [
-      { id: 'h-history',       x: 520, y: 40,  label: 'Own History',      badge: 'good',    badgeTxt: '10', hasLeaves: true },
-      { id: 'h-rigor',         x: 520, y: 152, label: 'Release Rigor',    badge: 'good',    badgeTxt: '',  hasLeaves: false },
-      { id: 'h-capabilities',  x: 520, y: 264, label: 'Capabilities',     badge: 'neutral', badgeTxt: '24', hasLeaves: false },
-      { id: 'h-scope',         x: 520, y: 376, label: 'Scope & Data',     badge: 'neutral', badgeTxt: '',  hasLeaves: false },
-      { id: 'h-distribution',  x: 520, y: 488, label: 'Distribution',     badge: 'neutral', badgeTxt: '',  hasLeaves: false },
-      { id: 'h-monitoring',    x: 520, y: 600, label: 'Monitoring',       badge: 'good',    badgeTxt: '',  hasLeaves: false }
+      { id: 'h-history',      label: 'Own History',     badge: 'good',    badgeTxt: '11', hasLeaves: true },
+      { id: 'h-hooks',        label: 'Hooks & Gates',   badge: 'good',    badgeTxt: '4',  hasLeaves: true },
+      { id: 'h-rigor',        label: 'Release Rigor',   badge: 'good',    badgeTxt: '',   hasLeaves: false },
+      { id: 'h-capabilities', label: 'Capabilities',    badge: 'neutral', badgeTxt: '24', hasLeaves: false },
+      { id: 'h-scope',        label: 'Scope & Data',    badge: 'neutral', badgeTxt: '',   hasLeaves: false },
+      { id: 'h-distribution', label: 'Distribution',    badge: 'neutral', badgeTxt: '',   hasLeaves: false },
+      { id: 'h-monitoring',   label: 'Monitoring',      badge: 'good',    badgeTxt: '',   hasLeaves: false }
     ]
   };
 
@@ -352,18 +438,39 @@
       { id: 'h7', label: '6e58bcf — plugin+multi-gate', status: 'pass' },
       { id: 'h8', label: '88b05f4 — CI+tests+budget', status: 'pass' },
       { id: 'h9', label: 'c2d0b3a — dirty-tree+CI harden', status: 'pass' },
-      { id: 'h10', label: 'f9b9482 — health+custom cmds', status: 'pass' }
+      { id: 'h10', label: 'f9b9482 — health+custom cmds', status: 'pass' },
+      { id: 'h11', label: 'a9d807a — mind-tree UI', status: 'pass' }
+    ],
+    'h-hooks': [
+      { id: 'hk1', label: 'secrets_guard.py', status: 'mid' },
+      { id: 'hk2', label: 'release_gate.py', status: 'pass' },
+      { id: 'hk3', label: 'session_log.py', status: 'neutral' },
+      { id: 'hk4', label: 'session_start.py', status: 'neutral' }
     ]
   };
 
   var DETAIL = {
+    root: {
+      title: 'THE HARNESS',
+      sub: 'Root of the tree — everything below is either a project it governs, or the harness itself',
+      html: '<div class="fields">' +
+        '<div class="field"><span class="fl">What this root represents</span><p>Not a project — the umbrella CLAUDE.md, hooks, and skills that apply to everything under ~/Documents/Projects/. Two branches hang off it: real projects it governs (saarthi, kavach), and the harness\'s own record of itself (_harness).</p></div>' +
+        '<div class="field"><span class="fl">Right now</span><p>1 project shipping (saarthi, currently blocked from a real release by a dirty working tree, not a failing review), 1 project not yet started (kavach), and the harness itself at 13 skills, 8 commands, 3 subagents, and 4 deterministic hooks.</p></div>' +
+        '<div class="field"><span class="fl">Click a project or _harness</span><p>Each expands into its own categories — gate history, docs, hooks, capabilities — down to individual leaf records.</p></div>' +
+        '</div>'
+    },
     saarthi: {
       title: 'saarthi',
       sub: 'Longest-running project — mature gate history, older doc/ops scaffolding',
       html: '<div class="fields">' +
         '<div class="field"><span class="fl">Gate record</span><p><span class="chip pass">Pass · current</span> for commit 816b574 — but the release-gate hook would <b>still block a real ship command right now</b>: saarthi has 5 uncommitted changes, and the newer dirty-tree check added in c2d0b3a fails closed on that regardless of what the recorded gate says.</p></div>' +
+        '<div class="field"><span class="fl">Gate adoption</span><table class="gate-table"><thead><tr><th>Gate</th><th>Required</th><th>Last result</th></tr></thead><tbody>' +
+          '<tr><td>privacy_guardrails_review</td><td>Yes</td><td class="status-pass">PASS · round 6 (816b574)</td></tr>' +
+          '<tr><td>qa_review</td><td>No</td><td class="status-none">not run</td></tr>' +
+          '<tr><td>compliance_review</td><td>No</td><td class="status-none">not run</td></tr>' +
+          '</tbody></table></div>' +
         '<div class="field"><span class="fl">Since adoption</span><p>19 commits, 6 review rounds, 4 of the 10 standard harness docs present, 84 Stop-hook log rows across 3 real sessions, project health 1/6.</p></div>' +
-        '<div class="field"><span class="fl">Click a category to the left</span><p>Gate History, Project Memory, and Features expand into individual entries — the rest, including the new Project Health, show their full record directly.</p></div>' +
+        '<div class="field"><span class="fl">Click a category to the left</span><p>Gate History, Project Memory, and Features expand into individual entries — the rest, including Project Health, show their full record directly.</p></div>' +
         '</div>'
     },
     kavach: {
@@ -372,7 +479,7 @@
       html: '<div class="fields">' +
         '<div class="field"><span class="fl">Status</span><p>Empty directory, not even git-initialized. No docs, no gate, no sessions.</p></div>' +
         '<div class="field"><span class="fl">/harness-status now scans it anyway</span><p>The fleet-wide table reports it plainly: <code>0/10 docs · no required gates · 0 sessions · budget not set · health 1/6 · not a git repo</code>. Nothing errors on an empty project — it just reads as zero, honestly, the same "not yet" the project-health score is designed to show.</p></div>' +
-        '<div class="field"><span class="fl">Already true, though</span><p>The umbrella CLAUDE.md and the three hooks apply the moment any session opens here — they\'re cwd-scoped, not tied to scaffolding. There\'s just nothing for them to act on yet.</p></div>' +
+        '<div class="field"><span class="fl">Already true, though</span><p>The umbrella CLAUDE.md and the four hooks apply the moment any session opens here — they\'re cwd-scoped, not tied to scaffolding. There\'s just nothing for them to act on yet.</p></div>' +
         '<div class="field"><span class="fl">Next step</span><p><code>/new-project</code> if starting fresh, or just begin building and run <code>/adopt-project</code> once there\'s a real codebase.</p></div>' +
         '</div>'
     },
@@ -381,9 +488,9 @@
       sub: 'The tool itself — deliberately not tracked as a "project"',
       html: '<div class="fields">' +
         '<div class="field"><span class="fl">Not gated</span><p>project_root_for() explicitly excludes any path starting with "_harness" — no gates.json, no docs/COST_LOG.md, by design. This is the instrument, not a product.</p></div>' +
-        '<div class="field"><span class="fl">What it is now</span><p>13 skills, 8 commands, 3 subagents, a 7-file pytest suite with its own CI, packaged as an installable Claude Code plugin (<code>solo-founder-harness</code>) as well as this machine\'s local symlink install.</p></div>' +
-        '<div class="field"><span class="fl">Own history</span><p>10 commits. 6e58bcf remains the largest single change (36 files) — the three since it (CI gate, dirty-tree rejection, project health) tightened rigor rather than adding surface area.</p></div>' +
-        '<div class="field"><span class="fl">New this round</span><p>A CI-side release check for GitHub Actions, monthly token budgets, project-health scoring, custom release-command declarations, an explicit scope disclaimer, and a data-retention doc — see the two new branches below.</p></div>' +
+        '<div class="field"><span class="fl">What it is now</span><p>13 skills, 8 commands, 3 subagents, and the 4 deterministic hooks that run beneath all of them — packaged as an installable Claude Code plugin (<code>solo-founder-harness</code>) as well as this machine\'s local symlink install, with a 7-file pytest suite and its own CI.</p></div>' +
+        '<div class="field"><span class="fl">Own history</span><p>11 commits. 6e58bcf remains the largest single change (36 files) — the commits since it (CI gate, dirty-tree rejection, project health, this map) tightened rigor and visibility rather than adding surface area.</p></div>' +
+        '<div class="field"><span class="fl">New this round</span><p>A CI-side release check for GitHub Actions, monthly token budgets, project-health scoring, custom release-command declarations, an explicit scope disclaimer, and a data-retention doc — see the branches below.</p></div>' +
         '</div>'
     },
     gate: {
@@ -405,7 +512,7 @@
         '<div><b>2.55M</b><span>Tokens out (est.)</span></div>' +
         '<div><b>3</b><span>Real sessions</span></div>' +
         '</div>' +
-        '<p style="font-size:12.3px;color:var(--ink-soft);">84 Stop-hook log rows resolve to 3 real sessions — the short original review, one long resumed build spanning four days, and a third that opened the same day this dashboard itself was being rebuilt. Chart below tracks the dominant build session alone.</p>' +
+        '<p style="font-size:12.3px;color:var(--ink-soft);">84 Stop-hook log rows resolve to 3 real sessions — the short original review, one long resumed build spanning four days, and a third that opened the same day this dashboard itself was being rebuilt. Chart below tracks the dominant build session alone. The in/out asymmetry is typical of an agentic coding session: most of each turn is generated code and tool output, not user-typed text.</p>' +
         '<div class="mini-chart"><svg viewBox="0 0 340 150" style="width:100%;height:auto;">' +
         '<g stroke="var(--line)" stroke-width="1"><line x1="30" y1="120" x2="320" y2="120"/><line x1="30" y1="65" x2="320" y2="65"/><line x1="30" y1="10" x2="320" y2="10"/></g>' +
         '<g font-family="var(--font-mono)" font-size="8" fill="var(--ink-faint)"><text x="27" y="123" text-anchor="end">0</text><text x="27" y="68" text-anchor="end">800K</text><text x="27" y="13" text-anchor="end">1.6M</text></g>' +
@@ -423,12 +530,12 @@
         '<div class="doc-tile"><b>MARKETING.md</b><span>Created</span></div>' +
         '<div class="doc-tile"><b>COST_LOG.md</b><span>Auto-appended</span></div>' +
         '<div class="doc-tile existing"><b>RELEASE_CHECKLIST.md</b><span>Pre-existing</span></div>' +
-        '<div class="doc-tile" style="border-color:var(--warn);background:var(--warn-soft);"><b>ROADMAP.md</b><span style="color:var(--warn)">Missing</span></div>' +
-        '<div class="doc-tile" style="border-color:var(--warn);background:var(--warn-soft);"><b>CHANGELOG.md</b><span style="color:var(--warn)">Missing</span></div>' +
-        '<div class="doc-tile" style="border-color:var(--warn);background:var(--warn-soft);"><b>OPERATIONS.md</b><span style="color:var(--warn)">Missing</span></div>' +
-        '<div class="doc-tile" style="border-color:var(--warn);background:var(--warn-soft);"><b>BUSINESS.md</b><span style="color:var(--warn)">Missing</span></div>' +
-        '<div class="doc-tile" style="border-color:var(--warn);background:var(--warn-soft);"><b>COMPLIANCE.md</b><span style="color:var(--warn)">Missing</span></div>' +
-        '<div class="doc-tile" style="border-color:var(--warn);background:var(--warn-soft);"><b>CONNECTORS.md</b><span style="color:var(--warn)">Missing (new doc)</span></div>' +
+        '<div class="doc-tile missing"><b>ROADMAP.md</b><span>Missing</span></div>' +
+        '<div class="doc-tile missing"><b>CHANGELOG.md</b><span>Missing</span></div>' +
+        '<div class="doc-tile missing"><b>OPERATIONS.md</b><span>Missing</span></div>' +
+        '<div class="doc-tile missing"><b>BUSINESS.md</b><span>Missing</span></div>' +
+        '<div class="doc-tile missing"><b>COMPLIANCE.md</b><span>Missing</span></div>' +
+        '<div class="doc-tile missing"><b>CONNECTORS.md</b><span>Missing (new doc)</span></div>' +
         '</div>' +
         '<p style="font-size:12px;color:var(--ink-soft);margin-top:10px;">saarthi was adopted before the harness\'s template set expanded twice — re-running <code>/adopt-project</code> would fill these six in without touching anything that already exists.</p>'
     },
@@ -438,7 +545,7 @@
       html: '<div class="engage-mini">' +
         '<div class="row"><span class="tag">Always-on</span><h5>Umbrella CLAUDE.md</h5><p>Ancestor-directory walk — privacy-by-default and guardrails-first apply the moment a session opens here.</p></div>' +
         '<div class="row"><span class="tag">Session-start</span><h5>Status line, now budget-aware</h5><p>Prints gate freshness, any ROADMAP "Now" items, and a token-budget alert at 50/80/100% (once per threshold per month) into the session\'s starting context. saarthi has no ROADMAP.md and no budget set, so only the gate line currently shows.</p></div>' +
-        '<div class="row"><span class="tag">Deterministic</span><h5>3 hooks + permission rules, every tool call</h5><p>secrets_guard + release_gate on Edit/Write/Bash/MCP (now also rejecting a dirty working tree, not just a stale commit), session_log on Stop, plus an explicit allow/deny list in settings.json — plain Python and static rules, zero token cost.</p></div>' +
+        '<div class="row"><span class="tag">Deterministic</span><h5>4 hooks + permission rules, every tool call</h5><p>secrets_guard + release_gate on Edit/Write/Bash/MCP (now also rejecting a dirty working tree, not just a stale commit), session_log on Stop, session_start on SessionStart, plus an explicit allow/deny list in settings.json — plain Python and static rules, zero token cost.</p></div>' +
         '<div class="row"><span class="tag">On-demand</span><h5>13 skills, model-triggered</h5><p>Fire from conversational intent — "is this safe to ship" — not a slash command you must remember. saarthi has only exercised privacy-guardrails-review so far.</p></div>' +
         '</div>'
     },
@@ -466,10 +573,23 @@
         '</div>' +
         '<p style="font-size:12px;color:var(--ink-faint);margin-top:10px;">A real prototype is fine leaving most of this unset — the point is a visible "not yet," not a silent gap. saarthi is mature in gate history but hasn\'t used the newer operational scaffolding.</p>'
     },
+    'k-status': {
+      title: 'Status',
+      sub: 'Nothing recorded yet — that\'s the honest state',
+      html: '<div class="fields">' +
+        '<div class="field"><span class="fl">What\'s here</span><p>Nothing. No docs, no gate record, no sessions logged, not even git-initialized.</p></div>' +
+        '<div class="field"><span class="fl">Next step</span><p><code>/new-project</code> to scaffold fresh, or start building and run <code>/adopt-project</code> once there\'s a real codebase.</p></div>' +
+        '</div>'
+    },
     'h-history': {
       title: 'Own History',
-      sub: '10 commits · the harness\'s own development',
+      sub: '11 commits · the harness\'s own development',
       html: '<p style="font-size:12.8px;color:var(--ink-soft);margin:0 0 4px;">From a single Projects-root CLAUDE.md to a 13-skill, plugin-packaged, CI-enforced, test-covered system. Click a commit for what changed and its scale.</p>'
+    },
+    'h-hooks': {
+      title: 'Hooks & Gates',
+      sub: '4 scripts · the deterministic enforcement layer, zero token cost',
+      html: '<p style="font-size:12.8px;color:var(--ink-soft);margin:0 0 4px;">Plain Python, wired via hooks.json, run on every matching tool call regardless of what any skill decides. Two are soft (ask / log-only), two carry real teeth (hard block, informational banner). Click one for its trigger, behavior, and fail mode.</p>'
     },
     'h-capabilities': {
       title: 'Capabilities',
@@ -480,6 +600,8 @@
         '<div class="row"><span class="tag">Release &amp; Ops</span><h5>release-notes · launch-checklist/ship · incident-response · support-triage</h5><p>Cutting a release, and everything that happens after one goes out.</p></div>' +
         '<div class="row"><span class="tag">Business &amp; Program</span><h5>pricing-strategy · gtm-marketing · weekly-review</h5><p>Monetization, positioning, and the founder-ops cadence across the whole portfolio.</p></div>' +
         '<div class="row"><span class="tag">Scaffolding</span><h5>new-project · adopt-project · harness-status · sunset-project · cost-report · harness-init</h5><p>Bringing a project in, checking on it, winding it down.</p></div>' +
+        '<div class="row"><span class="tag">Commands</span><h5>8 slash commands</h5><p><code>/new-project</code> · <code>/adopt-project</code> · <code>/harness-status</code> · <code>/ship</code> · <code>/cost-report</code> · <code>/weekly-review</code> · <code>/sunset-project</code> · <code>/harness-init</code></p></div>' +
+        '<div class="row"><span class="tag">Subagents</span><h5>3 specialized researchers, all read-only</h5><p><code>security-privacy-auditor</code> (opus-tier, invoked by privacy-guardrails-review) · <code>market-researcher</code> (competitive research) · <code>growth-marketer</code> (GTM/launch research) — invoked by skills, not called directly.</p></div>' +
         '</div>' +
         '<p style="font-size:12px;color:var(--ink-faint);margin-top:10px;">The harness now tests itself, too: 7 pytest files (gate logic, budgets, secrets guard, release gate, the CI check, docs consistency) run in their own GitHub Actions workflow — separate from the per-project CI template the harness ships to others.</p>'
     },
@@ -522,6 +644,32 @@
       fields: [['Change','release_gate.py now also blocks on an uncommitted working tree, not just a stale commit — closes the gap where HEAD matches the gate record but unreviewed local edits sit on top of it. CI supply-chain hardening and self-attestation gaps fixed.'],['Scale','24 files, 363 insertions.']] },
     h10: { title: 'f9b9482', sub: 'Project health + custom release commands', chip: 'pass',
       fields: [['Change','harness_status.py now scores each project\'s operational readiness (CI wired, release command documented, budget decided, etc.), and gate_write.py accepts project-declared custom release commands beyond the built-in patterns.'],['Scale','17 files, 604 insertions.']] },
+    h11: { title: 'a9d807a', sub: 'Mind-tree UI snapshot', chip: 'pass',
+      fields: [['Change','This map — a self-contained HTML snapshot of the harness for external review. No runtime coupling to the harness: it reads nothing live and enforces nothing.'],['Scale','1 file. Rebuilt in this round with provenance stamping, ARIA tree semantics, deep-linkable state, and per-project ship-readiness rollups.']] },
+    hk1: { title: 'secrets_guard.py', sub: 'PreToolUse · Edit · Write · Bash', chip: 'mid',
+      fields: [
+        ['Trigger','Edit, Write, or Bash tool calls, only when cwd is under the harness projects root.'],
+        ['Behavior','Checks the target file (Edit/Write) or command string (Bash) against a blocklist — *.pem, *_rsa, id_rsa*, *.p12, service-account*.json, credentials.json, .env, .env.* — and emits an "ask" permission decision with a reason if matched.'],
+        ['Fail mode','Soft — a permission prompt, not a block. A false positive costs one extra confirmation, not a stopped workflow.']
+      ] },
+    hk2: { title: 'release_gate.py', sub: 'PreToolUse · Bash · mcp__*', chip: 'pass',
+      fields: [
+        ['Trigger','Any Bash command or MCP tool call that matches a recognized publish/deploy/release pattern (or a project-declared custom release command).'],
+        ['Behavior','Reads .harness/gates.json for the current project; requires every gate in required_gates — always privacy_guardrails_review, plus any opted-in gates — to show a pass recorded against the exact current commit, and (since c2d0b3a) requires a clean working tree on top of that commit.'],
+        ['Fail mode','Hard block — this is the one hook the CLAUDE.md calls "mechanical, not advice." A git error while checking cleanliness counts as dirty, i.e. it fails closed.']
+      ] },
+    hk3: { title: 'session_log.py', sub: 'Stop · every session', chip: 'neutral',
+      fields: [
+        ['Trigger','Fires on the Stop hook at the end of every session.'],
+        ['Behavior','Parses the session transcript (JSONL) into an estimated token count and appends a row to docs/COST_LOG.md — the harness\'s own best-effort, non-authoritative usage record.'],
+        ['Fail mode','N/A — observational only, never blocks or asks.']
+      ] },
+    hk4: { title: 'session_start.py', sub: 'SessionStart · every session', chip: 'neutral',
+      fields: [
+        ['Trigger','Fires once when a new session opens in a project under the harness root.'],
+        ['Behavior','Prints gate freshness, any ROADMAP.md "Now" items, and a token-budget alert (at 50/80/100%, once per threshold per month) into the session\'s starting context.'],
+        ['Fail mode','N/A — informational banner only, never blocks or asks.']
+      ] },
     'h-rigor': {
       title: 'Release Rigor',
       sub: 'What changed since the first hard-block gate',
@@ -613,7 +761,16 @@
         '<p style="font-size:12.3px;color:var(--ink-soft);">A standing constraint for any future proposal, not tied to one specific review.</p>' }
   };
 
-  var state = { project: 'saarthi', expandedCat: 'gate', selectedLeaf: 'g6' };
+  var state = { project: 'saarthi', expandedCat: 'gate', selectedLeaf: 'g6', rootSelected: false, focusId: null };
+
+  function distributeY(n, top, bottom) {
+    if (n <= 0) return [];
+    if (n === 1) return [(top + bottom) / 2];
+    var step = (bottom - top) / (n - 1);
+    var out = [];
+    for (var i = 0; i < n; i++) out.push(top + step * i);
+    return out;
+  }
 
   function elbow(x1, y1, x2, y2) {
     var mx = x1 + (x2 - x1) * 0.5;
@@ -636,14 +793,50 @@
     return c;
   }
 
-  function makeNode(cls, x, y, innerHTML, onClick) {
+  function makeNode(cls, x, y, innerHTML, onClick, opts) {
+    opts = opts || {};
     var b = document.createElement('button');
     b.className = 'node ' + cls;
     b.style.left = pct(x, W);
     b.style.top = pct(y, H);
     b.innerHTML = innerHTML;
+    if (opts.id) b.setAttribute('data-id', opts.id);
+    b.setAttribute('role', 'treeitem');
+    if (opts.level) b.setAttribute('aria-level', opts.level);
+    if (typeof opts.selected === 'boolean') b.setAttribute('aria-selected', opts.selected ? 'true' : 'false');
+    if (typeof opts.expanded === 'boolean') b.setAttribute('aria-expanded', opts.expanded ? 'true' : 'false');
+    if (opts.label) b.setAttribute('aria-label', opts.label);
     b.addEventListener('click', onClick);
     return b;
+  }
+
+  function afterSelect() {
+    updateHash();
+    if (window.matchMedia('(max-width: 1000px)').matches) {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function updateHash() {
+    var parts = [];
+    if (state.project) parts.push(state.project);
+    if (state.expandedCat) parts.push(state.expandedCat);
+    if (state.selectedLeaf) parts.push(state.selectedLeaf);
+    try {
+      var hash = parts.length ? '#' + parts.join('/') : location.pathname + location.search;
+      history.replaceState(null, '', hash);
+    } catch (err) { /* file:// in some browsers disallows replaceState — deep links just stay off */ }
+  }
+
+  function selectProject(id) {
+    state.project = id;
+    state.expandedCat = null;
+    state.selectedLeaf = null;
+    state.rootSelected = false;
+    state.focusId = id;
+    showDetail(DETAIL[id]);
+    render();
+    afterSelect();
   }
 
   function render() {
@@ -651,69 +844,94 @@
     svg.innerHTML = '';
     Array.prototype.slice.call(canvas.querySelectorAll('.node')).forEach(function (n) { n.remove(); });
 
+    var projectYs = distributeY(PROJECTS.length, 130, 510);
+
     // root -> project traces
-    PROJECTS.forEach(function (p) {
+    PROJECTS.forEach(function (p, i) {
       var active = state.project === p.id;
-      svg.appendChild(svgPath(elbow(ROOT.x + 46, ROOT.y, p.x - 60, p.y), active));
+      svg.appendChild(svgPath(elbow(ROOT.x + 46, ROOT.y, COL.project - 60, projectYs[i]), active));
     });
     svg.appendChild(svgDot(ROOT.x, ROOT.y, true));
 
-    canvas.appendChild(makeNode('node-root', ROOT.x, ROOT.y, ROOT.label, function () {}));
+    canvas.appendChild(makeNode('node-root' + (state.rootSelected ? ' active-root' : ''), ROOT.x, ROOT.y, ROOT.label, function () {
+      state.rootSelected = true;
+      state.focusId = 'root';
+      showDetail(DETAIL['root']);
+      render();
+      afterSelect();
+    }, { id: 'root', level: 1, selected: state.rootSelected, label: 'THE HARNESS — fleet overview' }));
 
-    PROJECTS.forEach(function (p) {
+    PROJECTS.forEach(function (p, i) {
       var active = state.project === p.id;
+      var y = projectYs[i];
       var cls = 'node-project kind-' + p.kind + (active ? ' selected' : '');
       var inner = '<span class="dot"></span>' + p.label;
-      canvas.appendChild(makeNode(cls, p.x, p.y, inner, function () {
-        state.project = p.id;
-        state.expandedCat = null;
-        state.selectedLeaf = null;
-        showDetail(DETAIL[p.id]);
-        render();
-      }));
+      canvas.appendChild(makeNode(cls, COL.project, y, inner, function () {
+        selectProject(p.id);
+      }, { id: p.id, level: 2, selected: active, label: p.label + ' project' }));
     });
 
     var CATS = CATS_BY_PROJECT[state.project] || [];
     if (!CATS.length) return;
 
-    var projNode = PROJECTS.filter(function (p) { return p.id === state.project; })[0];
-    CATS.forEach(function (c) {
+    var projIdx = PROJECTS.map(function (p) { return p.id; }).indexOf(state.project);
+    var projY = projectYs[projIdx];
+    var catYs = distributeY(CATS.length, 20, 630);
+
+    CATS.forEach(function (c, i) {
+      var y = catYs[i];
       var active = state.expandedCat === c.id;
-      svg.appendChild(svgPath(elbow(projNode.x + 90, projNode.y, c.x - 78, c.y), active));
+      svg.appendChild(svgPath(elbow(COL.project + 90, projY, COL.cat - 78, y), active));
       var badgeCls = c.badge;
-      var inner = '<span class="badge ' + badgeCls + '">' + (c.badgeTxt || '·') + '</span>' + c.label;
+      var chev = c.hasLeaves ? '<span class="chev" aria-hidden="true">' + (active ? '▾' : '▸') + '</span>' : '';
+      var inner = '<span class="badge ' + badgeCls + '">' + (c.badgeTxt || '·') + '</span>' + c.label + chev;
       var clsName = 'node-cat' + (active ? ' expanded' : '');
-      canvas.appendChild(makeNode(clsName, c.x, c.y, inner, function () {
+      var ariaLabel = c.label + (c.badgeTxt ? ', ' + c.badgeTxt + ' items' : '') + (c.hasLeaves ? (active ? ', expanded' : ', collapsed') : '');
+      var nodeOpts = { id: c.id, level: 3, selected: active, label: ariaLabel };
+      if (c.hasLeaves) nodeOpts.expanded = active;
+      canvas.appendChild(makeNode(clsName, COL.cat, y, inner, function () {
         if (c.hasLeaves) {
           state.expandedCat = (state.expandedCat === c.id) ? null : c.id;
           state.selectedLeaf = null;
         } else {
           state.expandedCat = null;
         }
+        state.rootSelected = false;
+        state.focusId = c.id;
         showDetail(DETAIL[c.id]);
         render();
-      }));
+        afterSelect();
+      }, nodeOpts));
     });
 
     if (state.expandedCat && LEAVES[state.expandedCat]) {
       var leaves = LEAVES[state.expandedCat];
       var cat = CATS.filter(function (c) { return c.id === state.expandedCat; })[0];
-      var n = leaves.length;
-      var top = 30, bottom = H - 30;
-      var step = n > 1 ? (bottom - top) / (n - 1) : 0;
+      var catIdx = CATS.indexOf(cat);
+      var catY = catYs[catIdx];
+      var leafYs = distributeY(leaves.length, 30, H - 30);
       leaves.forEach(function (leaf, i) {
-        var ly = n > 1 ? top + step * i : (top + bottom) / 2;
-        var lx = 800;
+        var ly = leafYs[i];
         var active = state.selectedLeaf === leaf.id;
-        svg.appendChild(svgPath(elbow(cat.x + 95, cat.y, lx - 70, ly), active));
-        var inner = '<span class="chip-dot ' + leaf.status + '"></span><code>' + leaf.label + '</code>';
+        svg.appendChild(svgPath(elbow(COL.cat + 95, catY, COL.leaf - 70, ly), active));
+        var glyph = STATUS_GLYPH[leaf.status] || '';
+        var inner = '<span class="chip-dot ' + leaf.status + '" data-glyph="' + glyph + '" aria-hidden="true"></span><code>' + leaf.label + '</code>';
         var clsName = 'node-leaf' + (active ? ' selected' : '');
-        canvas.appendChild(makeNode(clsName, lx, ly, inner, function () {
+        var statusWord = STATUS_WORD[leaf.status] || leaf.status;
+        canvas.appendChild(makeNode(clsName, COL.leaf, ly, inner, function () {
           state.selectedLeaf = leaf.id;
+          state.rootSelected = false;
+          state.focusId = leaf.id;
           showDetailLeaf(DETAIL[leaf.id]);
           render();
-        }));
+          afterSelect();
+        }, { id: leaf.id, level: 4, selected: active, label: leaf.label + ', status ' + statusWord }));
       });
+    }
+
+    if (state.focusId) {
+      var toFocus = canvas.querySelector('[data-id="' + state.focusId.replace(/"/g, '') + '"]');
+      if (toFocus) toFocus.focus({ preventScroll: true });
     }
   }
 
@@ -741,7 +959,88 @@
       (d.html || '') + fieldsHtml;
   }
 
-  showDetailLeaf(DETAIL['g6']);
+  function buildPrintIndex() {
+    var html = '<h1>The Harness — Mind Tree (print index)</h1>';
+    PROJECTS.forEach(function (p) {
+      html += '<h2>' + p.label + '</h2><ul>';
+      (CATS_BY_PROJECT[p.id] || []).forEach(function (c) {
+        html += '<li>' + c.label + (c.badgeTxt ? ' (' + c.badgeTxt + ')' : '') + '</li>';
+        if (LEAVES[c.id]) {
+          html += '<ul>';
+          LEAVES[c.id].forEach(function (leaf) {
+            html += '<li>' + leaf.label + ' — ' + (STATUS_WORD[leaf.status] || leaf.status) + '</li>';
+          });
+          html += '</ul>';
+        }
+      });
+      html += '</ul>';
+    });
+    printIndex.innerHTML = html;
+  }
+
+  function parseHash() {
+    var h = location.hash.replace(/^#/, '');
+    if (!h) return null;
+    var parts = h.split('/');
+    return { project: parts[0] || null, cat: parts[1] || null, leaf: parts[2] || null };
+  }
+
+  function applyInitialHash() {
+    var initial = parseHash();
+    if (!initial) return;
+    var validProject = PROJECTS.some(function (p) { return p.id === initial.project; });
+    if (!validProject) return;
+    state.project = initial.project;
+    state.expandedCat = null;
+    state.selectedLeaf = null;
+    var cats = CATS_BY_PROJECT[state.project] || [];
+    if (initial.cat && cats.some(function (c) { return c.id === initial.cat; })) {
+      state.expandedCat = initial.cat;
+      if (initial.leaf && LEAVES[initial.cat] && LEAVES[initial.cat].some(function (l) { return l.id === initial.leaf; })) {
+        state.selectedLeaf = initial.leaf;
+      }
+    }
+  }
+
+  function showInitialDetail() {
+    if (state.selectedLeaf && DETAIL[state.selectedLeaf]) { showDetailLeaf(DETAIL[state.selectedLeaf]); return; }
+    if (state.expandedCat && DETAIL[state.expandedCat]) { showDetail(DETAIL[state.expandedCat]); return; }
+    if (state.project && DETAIL[state.project]) { showDetail(DETAIL[state.project]); return; }
+    showDetail(DETAIL['root']);
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && state.expandedCat) {
+      var wasExpanded = state.expandedCat;
+      state.expandedCat = null;
+      state.selectedLeaf = null;
+      state.focusId = wasExpanded;
+      showDetail(DETAIL[state.project]);
+      render();
+      updateHash();
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      var nodes = Array.prototype.slice.call(canvas.querySelectorAll('.node'));
+      var idx = nodes.indexOf(document.activeElement);
+      if (idx === -1) return;
+      e.preventDefault();
+      var next = e.key === 'ArrowDown'
+        ? nodes[(idx + 1) % nodes.length]
+        : nodes[(idx - 1 + nodes.length) % nodes.length];
+      next.focus({ preventScroll: true });
+    }
+  });
+
+  document.querySelectorAll('#fleet-row .fleet-pill').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      selectProject(btn.getAttribute('data-project'));
+    });
+  });
+
+  applyInitialHash();
+  showInitialDetail();
+  buildPrintIndex();
   render();
 })();
 </script>
+</body>
+</html>
