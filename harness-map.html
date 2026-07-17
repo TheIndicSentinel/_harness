@@ -103,6 +103,42 @@
   .legend .legend-swatch.neutral { background: var(--none); }
   .legend .legend-swatch::after { content: attr(data-glyph); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 7px; line-height: 1; color: var(--surface); font-weight: 900; }
   .legend .legend-meta-swatch { width: 16px; height: 12px; border: 1.5px dashed var(--line-strong); border-radius: 5px; flex-shrink: 0; }
+  .legend .kind-glyph { font-size: 12px; width: 14px; text-align: center; }
+
+  /* ---- kind taxonomy: WHAT a node is, orthogonal to whether it's currently passing ---- */
+  .kind-prefix { color: var(--ink-faint); font-size: 11px; margin-right: 1px; }
+  .kind-badge { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-display); font-size: 9.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 5px; margin-bottom: 10px; }
+  .kind-badge.k-enforced { background: var(--critical-soft); color: var(--critical); }
+  .kind-badge.k-advisory { background: var(--accent-soft); color: var(--accent-ink); }
+  .kind-badge.k-record { background: var(--surface-sunken); color: var(--ink-faint); border: 1px solid var(--line); }
+  .kind-badge.k-external { background: var(--warn-soft); color: var(--warn); }
+  .kind-badge.k-scope { background: var(--none-soft); color: var(--none); border: 1px dashed var(--line-strong); }
+
+  /* ---- relationship links ---- */
+  .related-block { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .related-block .fl { font-family: var(--font-display); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 8px; }
+  .related-links { display: flex; flex-wrap: wrap; gap: 6px; }
+  .related-link { font-family: var(--font-mono); font-size: 11px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--accent-ink); cursor: pointer; }
+  .related-link:hover { border-color: var(--accent); }
+  .related-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .node.related-glow { box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow); }
+
+  /* ---- source/evidence footer ---- */
+  .source-footer { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--line); font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-faint); line-height: 1.8; }
+  .source-footer b { color: var(--ink-soft); font-weight: 600; }
+  .trust-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-family: var(--font-display); font-weight: 700; font-size: 9px; letter-spacing: .03em; text-transform: uppercase; }
+  .trust-badge.local { background: var(--surface-sunken); color: var(--ink-faint); }
+  .trust-badge.ci { background: var(--good-soft); color: var(--good); }
+  .trust-badge.manual { background: var(--warn-soft); color: var(--warn); }
+
+  /* ---- glossary ---- */
+  .glossary { margin: 0 0 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  .glossary summary { cursor: pointer; padding: 11px 16px; font-family: var(--font-display); font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+  .glossary summary:hover { color: var(--ink); }
+  .glossary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; padding: 4px 16px 16px; }
+  @media (max-width: 700px) { .glossary-grid { grid-template-columns: 1fr; } }
+  .glossary-grid dt { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-ink); margin-top: 8px; }
+  .glossary-grid dd { margin: 2px 0 0; font-size: 12.3px; color: var(--ink-soft); line-height: 1.5; }
 
   .stage { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
   @media (max-width: 1000px) { .stage { grid-template-columns: 1fr; } }
@@ -341,6 +377,32 @@
     <span class="legend-item">Chip = would release_gate.py allow a ship right now</span>
   </div>
 
+  <div class="legend" role="note" aria-label="Kind legend — what a node IS, separate from whether it's currently passing">
+    <span class="legend-item"><span class="kind-glyph" aria-hidden="true">⛔</span>Enforced control — a hook that mechanically blocks or intercepts</span>
+    <span class="legend-item"><span class="kind-glyph" aria-hidden="true">◐</span>Advisory workflow — a skill/command someone chooses to run</span>
+    <span class="legend-item"><span class="kind-glyph" aria-hidden="true">▤</span>Record — evidence created, not a control (log, gate entry, memory, commit)</span>
+    <span class="legend-item"><span class="kind-glyph" aria-hidden="true">↗</span>External/manual — real effect needs a human action outside Claude Code</span>
+    <span class="legend-item"><span class="kind-glyph" aria-hidden="true">∅</span>Out of scope — explicitly not covered by this harness</span>
+  </div>
+
+  <details class="glossary">
+    <summary>Glossary — 12 terms, for a reviewer with no prior harness context</summary>
+    <dl class="glossary-grid">
+      <div><dt>Gate</dt><dd>A named check (e.g. privacy_guardrails_review) that must show a current pass before release_gate.py allows a recognized ship command through.</dd></div>
+      <div><dt>Required vs. advisory gate</dt><dd>Required gates are listed in gates.json's required_gates and mechanically block a ship. privacy_guardrails_review is always required; qa_review/compliance_review are opt-in per project.</dd></div>
+      <div><dt>Stale</dt><dd>A gate recorded "pass" for a commit that is no longer HEAD — new commits landed since the review, so the pass no longer covers the current code.</dd></div>
+      <div><dt>Dirty tree</dt><dd>Uncommitted local changes on top of HEAD. Since c2d0b3a, this blocks a ship even if the recorded gate is a current pass — a passing gate only vouches for committed content.</dd></div>
+      <div><dt>Self-attestation</dt><dd>Nothing but honesty stops a gate record from being hand-written as "pass." Required-status-checks in branch protection raise the ceiling; they don't remove this limit.</dd></div>
+      <div><dt>Project memory</dt><dd>Claude Code's own native per-project store (~/.claude/projects/&lt;path&gt;/memory/), not a harness invention — some skills write durable decisions there.</dd></div>
+      <div><dt>CI wiring (vs. present)</dt><dd>The harness-gate-check.yml template existing in a repo protects nothing until another workflow actually calls it via `uses:` — presence alone is inert.</dd></div>
+      <div><dt>Budget skipped</dt><dd>An explicit `--skip` recorded for a project's token budget — reads as a deliberate choice in project health, not a silent gap.</dd></div>
+      <div><dt>Project health</dt><dd>An informational 0–6 score (CI wired, release command documented, etc.) — not a gate. A real prototype can score low and still be fine.</dd></div>
+      <div><dt>Meta project</dt><dd>_harness itself — excluded from gate/docs/session tracking by design (project_root_for() skips any path starting with "_harness").</dd></div>
+      <div><dt>Evidence</dt><dd>A concrete artifact proving a claim: a commit SHA, a gates.json entry, a memory file, a COST_LOG.md row — not a description of intent.</dd></div>
+      <div><dt>Trust level</dt><dd>Local record (self-attested, this machine only), CI-verified (a GitHub Actions check ran against it), or manual (a human confirmed it outside any tooling).</dd></div>
+    </dl>
+  </details>
+
   <div class="stage">
     <div class="tree-frame">
       <div class="tree-canvas" id="canvas" role="tree" aria-label="Harness mind tree">
@@ -385,68 +447,76 @@
 
   var CATS_BY_PROJECT = {
     saarthi: [
-      { id: 'gate',      label: 'Gate History',       badge: 'good',    badgeTxt: '6',    hasLeaves: true },
-      { id: 'memory',    label: 'Project Memory',     badge: 'neutral', badgeTxt: '2',    hasLeaves: true },
-      { id: 'features',  label: 'Features Worked On', badge: 'good',    badgeTxt: '5',    hasLeaves: true },
-      { id: 'health',    label: 'Project Health',     badge: 'mixed',   badgeTxt: '1/6',  hasLeaves: false },
-      { id: 'tokens',    label: 'Token Usage',        badge: 'neutral', badgeTxt: '',     hasLeaves: false },
-      { id: 'docs',      label: 'Docs Adopted',       badge: 'mixed',   badgeTxt: '4/10', hasLeaves: false },
-      { id: 'engage',    label: 'How It Engages',     badge: 'neutral', badgeTxt: '',     hasLeaves: false },
-      { id: 'decisions', label: 'Standing Decisions', badge: 'mixed',   badgeTxt: '5',    hasLeaves: false }
+      { id: 'gate',      label: 'Gate History',       badge: 'good',    badgeTxt: '6',    hasLeaves: true, kind: 'record' },
+      { id: 'memory',    label: 'Project Memory',     badge: 'neutral', badgeTxt: '2',    hasLeaves: true, kind: 'record' },
+      { id: 'features',  label: 'Features Worked On', badge: 'good',    badgeTxt: '5',    hasLeaves: true, kind: 'record' },
+      { id: 'health',    label: 'Project Health',     badge: 'mixed',   badgeTxt: '1/6',  hasLeaves: false, kind: 'record' },
+      { id: 'tokens',    label: 'Token Usage',        badge: 'neutral', badgeTxt: '',     hasLeaves: false, kind: 'record' },
+      { id: 'docs',      label: 'Docs Adopted',       badge: 'mixed',   badgeTxt: '4/10', hasLeaves: false, kind: 'record' },
+      { id: 'engage',    label: 'How It Engages',     badge: 'neutral', badgeTxt: '',     hasLeaves: false, kind: 'enforced' },
+      { id: 'decisions', label: 'Standing Decisions', badge: 'mixed',   badgeTxt: '5',    hasLeaves: false, kind: 'record' }
     ],
     kavach: [
-      { id: 'k-status', label: 'Status', badge: 'neutral', badgeTxt: '', hasLeaves: false }
+      { id: 'k-status', label: 'Status', badge: 'neutral', badgeTxt: '', hasLeaves: false, kind: 'record' }
     ],
     harness: [
-      { id: 'h-history',      label: 'Own History',     badge: 'good',    badgeTxt: '11', hasLeaves: true },
-      { id: 'h-hooks',        label: 'Hooks & Gates',   badge: 'good',    badgeTxt: '4',  hasLeaves: true },
-      { id: 'h-rigor',        label: 'Release Rigor',   badge: 'good',    badgeTxt: '',   hasLeaves: false },
-      { id: 'h-capabilities', label: 'Capabilities',    badge: 'neutral', badgeTxt: '24', hasLeaves: false },
-      { id: 'h-scope',        label: 'Scope & Data',    badge: 'neutral', badgeTxt: '',   hasLeaves: false },
-      { id: 'h-distribution', label: 'Distribution',    badge: 'neutral', badgeTxt: '',   hasLeaves: false },
-      { id: 'h-monitoring',   label: 'Monitoring',      badge: 'good',    badgeTxt: '',   hasLeaves: false }
+      { id: 'h-history',      label: 'Own History',     badge: 'good',    badgeTxt: '11', hasLeaves: true, kind: 'record' },
+      { id: 'h-hooks',        label: 'Hooks & Gates',   badge: 'good',    badgeTxt: '4',  hasLeaves: true, kind: 'enforced' },
+      { id: 'h-rigor',        label: 'Release Rigor',   badge: 'good',    badgeTxt: '',   hasLeaves: false, kind: 'enforced' },
+      { id: 'h-capabilities', label: 'Capabilities',    badge: 'neutral', badgeTxt: '24', hasLeaves: false, kind: 'advisory' },
+      { id: 'h-scope',        label: 'Scope & Data',    badge: 'neutral', badgeTxt: '',   hasLeaves: false, kind: 'scope' },
+      { id: 'h-distribution', label: 'Distribution',    badge: 'neutral', badgeTxt: '',   hasLeaves: false, kind: 'external' },
+      { id: 'h-monitoring',   label: 'Monitoring',      badge: 'good',    badgeTxt: '',   hasLeaves: false, kind: 'record' }
     ]
   };
 
   var LEAVES = {
     gate: [
-      { id: 'g1', label: '6adc439', status: 'fail' },
-      { id: 'g2', label: '462d227', status: 'mid' },
-      { id: 'g3', label: '6c0ca87', status: 'pass' },
-      { id: 'g4', label: '5bf5ac3', status: 'pass' },
-      { id: 'g5', label: 'd1694fa', status: 'pass' },
-      { id: 'g6', label: '816b574', status: 'pass' }
+      { id: 'g1', label: '6adc439', status: 'fail', kind: 'record' },
+      { id: 'g2', label: '462d227', status: 'mid', kind: 'record' },
+      { id: 'g3', label: '6c0ca87', status: 'pass', kind: 'record' },
+      { id: 'g4', label: '5bf5ac3', status: 'pass', kind: 'record' },
+      { id: 'g5', label: 'd1694fa', status: 'pass', kind: 'record' },
+      { id: 'g6', label: '816b574', status: 'pass', kind: 'record' }
     ],
     memory: [
-      { id: 'm1', label: 'privacy review', status: 'pass' },
-      { id: 'm2', label: 'backend scope', status: 'neutral' }
+      { id: 'm1', label: 'privacy review', status: 'pass', kind: 'record' },
+      { id: 'm2', label: 'backend scope', status: 'neutral', kind: 'record' }
     ],
     features: [
-      { id: 'f1', label: '9-lang memory extraction', status: 'pass' },
-      { id: 'f2', label: 'download resume + 416', status: 'pass' },
-      { id: 'f3', label: 'no-Crashlytics + log share', status: 'pass' },
-      { id: 'f4', label: 'localization + quick-action', status: 'pass' },
-      { id: 'f5', label: 'auto-select AI model', status: 'neutral' }
+      { id: 'f1', label: '9-lang memory extraction', status: 'pass', kind: 'record' },
+      { id: 'f2', label: 'download resume + 416', status: 'pass', kind: 'record' },
+      { id: 'f3', label: 'no-Crashlytics + log share', status: 'pass', kind: 'record' },
+      { id: 'f4', label: 'localization + quick-action', status: 'pass', kind: 'record' },
+      { id: 'f5', label: 'auto-select AI model', status: 'neutral', kind: 'record' }
     ],
     'h-history': [
-      { id: 'h1', label: 'e8d4ede — foundation', status: 'pass' },
-      { id: 'h2', label: '76621bc — lifecycle+gate', status: 'pass' },
-      { id: 'h3', label: '6d40a24 — adopt-project', status: 'pass' },
-      { id: 'h4', label: '77cd968 — harness-status', status: 'pass' },
-      { id: 'h5', label: '9fdfac2 — opus+memory', status: 'pass' },
-      { id: 'h6', label: '0d8f7ad — examples', status: 'pass' },
-      { id: 'h7', label: '6e58bcf — plugin+multi-gate', status: 'pass' },
-      { id: 'h8', label: '88b05f4 — CI+tests+budget', status: 'pass' },
-      { id: 'h9', label: 'c2d0b3a — dirty-tree+CI harden', status: 'pass' },
-      { id: 'h10', label: 'f9b9482 — health+custom cmds', status: 'pass' },
-      { id: 'h11', label: 'a9d807a — mind-tree UI', status: 'pass' }
+      { id: 'h1', label: 'e8d4ede — foundation', status: 'pass', kind: 'record' },
+      { id: 'h2', label: '76621bc — lifecycle+gate', status: 'pass', kind: 'record' },
+      { id: 'h3', label: '6d40a24 — adopt-project', status: 'pass', kind: 'record' },
+      { id: 'h4', label: '77cd968 — harness-status', status: 'pass', kind: 'record' },
+      { id: 'h5', label: '9fdfac2 — opus+memory', status: 'pass', kind: 'record' },
+      { id: 'h6', label: '0d8f7ad — examples', status: 'pass', kind: 'record' },
+      { id: 'h7', label: '6e58bcf — plugin+multi-gate', status: 'pass', kind: 'record' },
+      { id: 'h8', label: '88b05f4 — CI+tests+budget', status: 'pass', kind: 'record' },
+      { id: 'h9', label: 'c2d0b3a — dirty-tree+CI harden', status: 'pass', kind: 'record' },
+      { id: 'h10', label: 'f9b9482 — health+custom cmds', status: 'pass', kind: 'record' },
+      { id: 'h11', label: 'a9d807a — mind-tree UI', status: 'pass', kind: 'record' }
     ],
     'h-hooks': [
-      { id: 'hk1', label: 'secrets_guard.py', status: 'mid' },
-      { id: 'hk2', label: 'release_gate.py', status: 'pass' },
-      { id: 'hk3', label: 'session_log.py', status: 'neutral' },
-      { id: 'hk4', label: 'session_start.py', status: 'neutral' }
+      { id: 'hk1', label: 'secrets_guard.py', status: 'mid', kind: 'enforced' },
+      { id: 'hk2', label: 'release_gate.py', status: 'pass', kind: 'enforced' },
+      { id: 'hk3', label: 'session_log.py', status: 'neutral', kind: 'record' },
+      { id: 'hk4', label: 'session_start.py', status: 'neutral', kind: 'record' }
     ]
+  };
+
+  var KIND_META = {
+    enforced: { glyph: '⛔', word: 'Enforced control' },
+    advisory: { glyph: '◐', word: 'Advisory workflow' },
+    record:   { glyph: '▤', word: 'Record' },
+    external: { glyph: '↗', word: 'External / manual' },
+    scope:    { glyph: '∅', word: 'Out of scope' }
   };
 
   var DETAIL = {
@@ -463,6 +533,7 @@
       title: 'saarthi',
       sub: 'Longest-running project — mature gate history, older doc/ops scaffolding',
       html: '<div class="fields">' +
+        '<div class="field"><span class="fl">Lifecycle position</span><p>Stage 2: Building the MVP (shipping; iterating on stability and features) — declared in saarthi\'s own CLAUDE.md, read verbatim by <code>project_stage()</code>. Risk tier: not set (no COMPLIANCE.md yet).</p></div>' +
         '<div class="field"><span class="fl">Gate record</span><p><span class="chip pass">Pass · current</span> for commit 816b574 — but the release-gate hook would <b>still block a real ship command right now</b>: saarthi has 5 uncommitted changes, and the newer dirty-tree check added in c2d0b3a fails closed on that regardless of what the recorded gate says.</p></div>' +
         '<div class="field"><span class="fl">Gate adoption</span><table class="gate-table"><thead><tr><th>Gate</th><th>Required</th><th>Last result</th></tr></thead><tbody>' +
           '<tr><td>privacy_guardrails_review</td><td>Yes</td><td class="status-pass">PASS · round 6 (816b574)</td></tr>' +
@@ -477,6 +548,7 @@
       title: 'kavach',
       sub: 'Created 2026-07-16 19:34 — nothing here yet, but already visible to the fleet',
       html: '<div class="fields">' +
+        '<div class="field"><span class="fl">Lifecycle position</span><p>Pre-idea — no CLAUDE.md exists yet to declare a stage. Earliest point the harness can even observe a project.</p></div>' +
         '<div class="field"><span class="fl">Status</span><p>Empty directory, not even git-initialized. No docs, no gate, no sessions.</p></div>' +
         '<div class="field"><span class="fl">/harness-status now scans it anyway</span><p>The fleet-wide table reports it plainly: <code>0/10 docs · no required gates · 0 sessions · budget not set · health 1/6 · not a git repo</code>. Nothing errors on an empty project — it just reads as zero, honestly, the same "not yet" the project-health score is designed to show.</p></div>' +
         '<div class="field"><span class="fl">Already true, though</span><p>The umbrella CLAUDE.md and the four hooks apply the moment any session opens here — they\'re cwd-scoped, not tied to scaffolding. There\'s just nothing for them to act on yet.</p></div>' +
@@ -496,7 +568,8 @@
     gate: {
       title: 'Gate History',
       sub: '6 review rounds · privacy_guardrails_review only',
-      html: '<p style="font-size:12.8px;color:var(--ink-soft);margin:0 0 4px;">FAIL → two fix rounds → PASS, held through four more re-reviews. Click a round for the full input → harness → output record. saarthi hasn\'t opted qa_review or compliance_review into its required_gates yet — both exist in the harness now, just not adopted here. Since c2d0b3a, a passing record alone isn\'t enough either: an uncommitted working tree fails the check too (see the top-level saarthi note — that\'s the actual state right now).</p>'
+      html: '<p style="font-size:12.8px;color:var(--ink-soft);margin:0 0 4px;">FAIL → two fix rounds → PASS, held through four more re-reviews. Click a round for the full input → harness → output record. saarthi hasn\'t opted qa_review or compliance_review into its required_gates yet — both exist in the harness now, just not adopted here. Since c2d0b3a, a passing record alone isn\'t enough either: an uncommitted working tree fails the check too (see the top-level saarthi note — that\'s the actual state right now).</p>',
+      related: [{id:'hk2', label:'_harness → release_gate.py'}, {id:'health', label:'Project Health'}, {id:'memory', label:'Project Memory'}]
     },
     memory: {
       title: 'Project Memory',
@@ -571,7 +644,8 @@
         '<div class="d"><span class="v" style="color:var(--critical)">Not set</span><p><b>Budget set or skipped</b> — no decision recorded either way.</p></div>' +
         '<div class="d"><span class="v" style="color:var(--critical)">Not set</span><p><b>Connector registry reviewed</b> — no docs/CONNECTORS.md yet.</p></div>' +
         '</div>' +
-        '<p style="font-size:12px;color:var(--ink-faint);margin-top:10px;">A real prototype is fine leaving most of this unset — the point is a visible "not yet," not a silent gap. saarthi is mature in gate history but hasn\'t used the newer operational scaffolding.</p>'
+        '<p style="font-size:12px;color:var(--ink-faint);margin-top:10px;">A real prototype is fine leaving most of this unset — the point is a visible "not yet," not a silent gap. saarthi is mature in gate history but hasn\'t used the newer operational scaffolding.</p>',
+      related: [{id:'gate', label:'Gate History'}, {id:'docs', label:'Docs Adopted'}, {id:'hk2', label:'_harness → release_gate.py'}]
     },
     'k-status': {
       title: 'Status',
@@ -589,7 +663,8 @@
     'h-hooks': {
       title: 'Hooks & Gates',
       sub: '4 scripts · the deterministic enforcement layer, zero token cost',
-      html: '<p style="font-size:12.8px;color:var(--ink-soft);margin:0 0 4px;">Plain Python, wired via hooks.json, run on every matching tool call regardless of what any skill decides. Two are soft (ask / log-only), two carry real teeth (hard block, informational banner). Click one for its trigger, behavior, and fail mode.</p>'
+      html: '<p style="font-size:12.8px;color:var(--ink-soft);margin:0 0 4px;">Plain Python, wired via hooks.json, run on every matching tool call regardless of what any skill decides. Two are soft (ask / log-only), two carry real teeth (hard block, informational banner). Click one for its trigger, behavior, and fail mode.</p>',
+      related: [{id:'h-rigor', label:'Release Rigor'}, {id:'engage', label:'saarthi → How It Engages'}]
     },
     'h-capabilities': {
       title: 'Capabilities',
@@ -650,26 +725,38 @@
       fields: [
         ['Trigger','Edit, Write, or Bash tool calls, only when cwd is under the harness projects root.'],
         ['Behavior','Checks the target file (Edit/Write) or command string (Bash) against a blocklist — *.pem, *_rsa, id_rsa*, *.p12, service-account*.json, credentials.json, .env, .env.* — and emits an "ask" permission decision with a reason if matched.'],
-        ['Fail mode','Soft — a permission prompt, not a block. A false positive costs one extra confirmation, not a stopped workflow.']
-      ] },
+        ['Fail mode','Soft — a permission prompt, not a block. A false positive costs one extra confirmation, not a stopped workflow.'],
+        ['Scope / limits','Only sees Edit/Write/Bash calls made through Claude Code. A secret written via any other tool or a plain terminal is invisible to it.']
+      ],
+      related: [{id:'engage', label:'saarthi → How It Engages'}, {id:'h-rigor', label:'Release Rigor'}],
+      source: { file: 'hooks/secrets_guard.py', trust: 'local record', generated: '2026-07-17' } },
     hk2: { title: 'release_gate.py', sub: 'PreToolUse · Bash · mcp__*', chip: 'pass',
       fields: [
         ['Trigger','Any Bash command or MCP tool call that matches a recognized publish/deploy/release pattern (or a project-declared custom release command).'],
         ['Behavior','Reads .harness/gates.json for the current project; requires every gate in required_gates — always privacy_guardrails_review, plus any opted-in gates — to show a pass recorded against the exact current commit, and (since c2d0b3a) requires a clean working tree on top of that commit.'],
-        ['Fail mode','Hard block — this is the one hook the CLAUDE.md calls "mechanical, not advice." A git error while checking cleanliness counts as dirty, i.e. it fails closed.']
-      ] },
+        ['Fail mode','Hard block — this is the one hook the CLAUDE.md calls "mechanical, not advice." A git error while checking cleanliness counts as dirty, i.e. it fails closed.'],
+        ['Scope / limits','Only sees ship actions run through Claude Code — a release triggered from a plain terminal or directly from CI bypasses it entirely (see the CI-side check for that gap).']
+      ],
+      related: [{id:'gate', label:'saarthi → Gate History'}, {id:'g6', label:'Current pass (816b574)'}, {id:'health', label:'saarthi → Project Health'}, {id:'h-rigor', label:'Release Rigor'}],
+      source: { file: 'hooks/release_gate.py', trust: 'local record', generated: '2026-07-17' } },
     hk3: { title: 'session_log.py', sub: 'Stop · every session', chip: 'neutral',
       fields: [
         ['Trigger','Fires on the Stop hook at the end of every session.'],
         ['Behavior','Parses the session transcript (JSONL) into an estimated token count and appends a row to docs/COST_LOG.md — the harness\'s own best-effort, non-authoritative usage record.'],
-        ['Fail mode','N/A — observational only, never blocks or asks.']
-      ] },
+        ['Fail mode','N/A — observational only, never blocks or asks.'],
+        ['Scope / limits','Best-effort only — depends on an undocumented transcript shape. See docs/OTEL.md for the full trust ranking above this.']
+      ],
+      related: [{id:'tokens', label:'saarthi → Token Usage'}],
+      source: { file: 'hooks/session_log.py', trust: 'local record', generated: '2026-07-17' } },
     hk4: { title: 'session_start.py', sub: 'SessionStart · every session', chip: 'neutral',
       fields: [
         ['Trigger','Fires once when a new session opens in a project under the harness root.'],
         ['Behavior','Prints gate freshness, any ROADMAP.md "Now" items, and a token-budget alert (at 50/80/100%, once per threshold per month) into the session\'s starting context.'],
-        ['Fail mode','N/A — informational banner only, never blocks or asks.']
-      ] },
+        ['Fail mode','N/A — informational banner only, never blocks or asks.'],
+        ['Scope / limits','Fires only at session open — a gate that goes stale mid-session isn\'t re-announced until the next session starts.']
+      ],
+      related: [{id:'h-monitoring', label:'Monitoring'}],
+      source: { file: 'hooks/session_start.py', trust: 'local record', generated: '2026-07-17' } },
     'h-rigor': {
       title: 'Release Rigor',
       sub: 'What changed since the first hard-block gate',
@@ -678,7 +765,10 @@
         '<div class="field"><span class="fl">CI-side check (real engineering wrinkle)</span><p>A gate record\'s <code>reviewed_commit</code> is stamped as HEAD <em>before</em> the record itself is committed — so a commit can never validly claim to review itself. The CI check therefore accepts only: <code>reviewed_commit</code> is the current commit\'s parent, and the diff between them touches only <code>.harness/gates.json</code>. Deliberately more lenient than the local hook\'s exact-HEAD match — they solve different problems.</p></div>' +
         '<div class="field"><span class="fl">Self-attestation, named honestly</span><p>Nothing stops a hand-written <code>"status": "pass"</code> from satisfying either check. Required-status-checks in branch protection make bypassing a check a deliberate, visible admin action instead of an accidental one — that\'s the real ceiling raised, not a claim of tamper-proofing.</p></div>' +
         '<div class="field"><span class="fl">Custom release commands</span><p>Built-in patterns can\'t know a project\'s own deploy script. <code>gate_write.py --release-commands "make release,./scripts/deploy.sh"</code> extends the gate to cover it (substring match, project-declared).</p></div>' +
-        '</div>'
+        '<div class="field"><span class="fl">Scope / limits</span><p>All of this governs actions taken <em>through Claude Code</em> only. A release run from a plain terminal, or triggered by CI directly without the opt-in workflow wiring, is invisible to every mechanism on this page.</p></div>' +
+        '</div>',
+      related: [{id:'h-hooks', label:'Hooks & Gates'}, {id:'hk2', label:'release_gate.py'}, {id:'gate', label:'saarthi → Gate History'}],
+      source: { file: 'hooks/gate_lib.py, hooks/release_gate.py, docs/CI_GATE_CHECK.md', commit: 'c2d0b3a', trust: 'local record', generated: '2026-07-17' }
     },
     'h-scope': {
       title: 'Scope & Data',
@@ -752,7 +842,9 @@
     g6: { title: '816b574', sub: 'Gate round 6 · PASS · v1.0.34 · current', chip: 'pass',
       fields: [['Input','Memory extraction extended to all 9 languages, notification PendingIntents added, download-resume/HTTP-416 fix.'],
         ['Harness','Full re-scan of the new code paths against every standing finding.'],
-        ['Output','PASS, no findings. Gate open at this commit — shipped as v1.0.34.']] },
+        ['Output','PASS, no findings. Gate open at this commit — shipped as v1.0.34.']],
+      related: [{id:'hk2', label:'_harness → release_gate.py'}, {id:'m1', label:'Memory: review history'}],
+      source: { file: 'saarthi/.harness/gates.json', commit: '816b574', trust: 'local record', generated: '2026-07-16T09:33:53Z' } },
     m1: { title: 'privacy_guardrails_review_2026-07-13.md', sub: 'Review history & standing findings', chip: 'pass',
       html: '<p style="font-size:12.6px;color:var(--ink-soft);">The full six-round history, plus the accepted-risk list — kept as one running record so each review reads the last verdict instead of starting from zero.</p>' +
         '<div class="quote-block"><blockquote>"Don\'t re-litigate either closed finding; only re-flag if new commits touch saarthi.publicLog, DebugLogger, add a DebugLogger.log() call with unstripped user content, or add a deep-link/intent-filter that could reach the assistant?msg= route."</blockquote><span class="src">— verbatim, this file</span></div>' },
@@ -834,7 +926,7 @@
     state.selectedLeaf = null;
     state.rootSelected = false;
     state.focusId = id;
-    showDetail(DETAIL[id]);
+    showDetail(DETAIL[id], id);
     render();
     afterSelect();
   }
@@ -856,7 +948,7 @@
     canvas.appendChild(makeNode('node-root' + (state.rootSelected ? ' active-root' : ''), ROOT.x, ROOT.y, ROOT.label, function () {
       state.rootSelected = true;
       state.focusId = 'root';
-      showDetail(DETAIL['root']);
+      showDetail(DETAIL['root'], 'root');
       render();
       afterSelect();
     }, { id: 'root', level: 1, selected: state.rootSelected, label: 'THE HARNESS — fleet overview' }));
@@ -884,7 +976,9 @@
       svg.appendChild(svgPath(elbow(COL.project + 90, projY, COL.cat - 78, y), active));
       var badgeCls = c.badge;
       var chev = c.hasLeaves ? '<span class="chev" aria-hidden="true">' + (active ? '▾' : '▸') + '</span>' : '';
-      var inner = '<span class="badge ' + badgeCls + '">' + (c.badgeTxt || '·') + '</span>' + c.label + chev;
+      var km = KIND_META[c.kind];
+      var kindPrefix = km ? '<span class="kind-prefix" aria-hidden="true" title="' + km.word + '">' + km.glyph + '</span>' : '';
+      var inner = kindPrefix + '<span class="badge ' + badgeCls + '">' + (c.badgeTxt || '·') + '</span>' + c.label + chev;
       var clsName = 'node-cat' + (active ? ' expanded' : '');
       var ariaLabel = c.label + (c.badgeTxt ? ', ' + c.badgeTxt + ' items' : '') + (c.hasLeaves ? (active ? ', expanded' : ', collapsed') : '');
       var nodeOpts = { id: c.id, level: 3, selected: active, label: ariaLabel };
@@ -898,7 +992,7 @@
         }
         state.rootSelected = false;
         state.focusId = c.id;
-        showDetail(DETAIL[c.id]);
+        showDetail(DETAIL[c.id], c.id);
         render();
         afterSelect();
       }, nodeOpts));
@@ -915,14 +1009,16 @@
         var active = state.selectedLeaf === leaf.id;
         svg.appendChild(svgPath(elbow(COL.cat + 95, catY, COL.leaf - 70, ly), active));
         var glyph = STATUS_GLYPH[leaf.status] || '';
-        var inner = '<span class="chip-dot ' + leaf.status + '" data-glyph="' + glyph + '" aria-hidden="true"></span><code>' + leaf.label + '</code>';
+        var lkm = KIND_META[leaf.kind];
+        var leafKindPrefix = lkm ? '<span class="kind-prefix" aria-hidden="true" title="' + lkm.word + '">' + lkm.glyph + '</span>' : '';
+        var inner = leafKindPrefix + '<span class="chip-dot ' + leaf.status + '" data-glyph="' + glyph + '" aria-hidden="true"></span><code>' + leaf.label + '</code>';
         var clsName = 'node-leaf' + (active ? ' selected' : '');
         var statusWord = STATUS_WORD[leaf.status] || leaf.status;
         canvas.appendChild(makeNode(clsName, COL.leaf, ly, inner, function () {
           state.selectedLeaf = leaf.id;
           state.rootSelected = false;
           state.focusId = leaf.id;
-          showDetailLeaf(DETAIL[leaf.id]);
+          showDetailLeaf(DETAIL[leaf.id], leaf.id);
           render();
           afterSelect();
         }, { id: leaf.id, level: 4, selected: active, label: leaf.label + ', status ' + statusWord }));
@@ -935,17 +1031,70 @@
     }
   }
 
-  function showDetail(d) {
-    if (!d) { panel.innerHTML = '<div class="p-empty">Select a branch.</div>'; return; }
-    panel.innerHTML =
-      '<span class="k-eyebrow eyebrow">Detail</span>' +
-      '<h3>' + d.title + '</h3>' +
-      '<div class="p-sub">' + d.sub + '</div>' +
-      (d.html || '');
+  function kindForCatId(id) {
+    for (var proj in CATS_BY_PROJECT) {
+      var found = CATS_BY_PROJECT[proj].filter(function (c) { return c.id === id; })[0];
+      if (found) return found.kind;
+    }
+    return null;
   }
 
-  function showDetailLeaf(d) {
+  function kindForLeafId(id) {
+    for (var group in LEAVES) {
+      var found = LEAVES[group].filter(function (l) { return l.id === id; })[0];
+      if (found) return found.kind;
+    }
+    return null;
+  }
+
+  function renderKindBadge(kind) {
+    var km = KIND_META[kind];
+    if (!km) return '';
+    return '<span class="kind-badge k-' + kind + '">' + km.glyph + ' ' + km.word + '</span><br>';
+  }
+
+  function renderSource(source) {
+    if (!source) return '';
+    var trustCls = source.trust === 'CI-verified' ? 'ci' : (source.trust === 'manual' ? 'manual' : 'local');
+    return '<div class="source-footer">' +
+      (source.file ? '<b>Source:</b> ' + source.file + '<br>' : '') +
+      (source.commit ? '<b>Commit:</b> ' + source.commit + '<br>' : '') +
+      (source.generated ? '<b>Generated:</b> ' + source.generated + '<br>' : '') +
+      '<b>Trust:</b> <span class="trust-badge ' + trustCls + '">' + source.trust + '</span>' +
+      '</div>';
+  }
+
+  function renderRelated(related) {
+    if (!related || !related.length) return '';
+    var links = related.map(function (r) {
+      return '<button class="related-link" data-nav="' + r.id + '">' + r.label + '</button>';
+    }).join('');
+    return '<div class="related-block"><span class="fl">Related</span><div class="related-links">' + links + '</div></div>';
+  }
+
+  function wireRelatedLinks() {
+    Array.prototype.slice.call(panel.querySelectorAll('[data-nav]')).forEach(function (btn) {
+      btn.addEventListener('click', function () { navigateTo(btn.getAttribute('data-nav')); });
+    });
+  }
+
+  function showDetail(d, id) {
+    if (!d) { panel.innerHTML = '<div class="p-empty">Select a branch.</div>'; return; }
+    var kind = id ? kindForCatId(id) : null;
+    panel.innerHTML =
+      '<span class="k-eyebrow eyebrow">Detail</span>' +
+      renderKindBadge(kind) +
+      '<h3>' + d.title + '</h3>' +
+      '<div class="p-sub">' + d.sub + '</div>' +
+      (d.html || '') +
+      renderRelated(d.related) +
+      renderSource(d.source);
+    wireRelatedLinks();
+  }
+
+  function showDetailLeaf(d, id) {
     if (!d) return;
+    var kind = id ? kindForLeafId(id) : null;
     var fieldsHtml = '';
     if (d.fields) {
       fieldsHtml = '<div class="fields">' + d.fields.map(function (f) {
@@ -954,9 +1103,53 @@
     }
     panel.innerHTML =
       '<span class="k-eyebrow eyebrow">Detail</span>' +
+      renderKindBadge(kind) +
       '<h3>' + d.title + '</h3>' +
       '<div class="p-sub"><span class="chip ' + d.chip + '">' + d.chip + '</span> &nbsp; ' + d.sub + '</div>' +
-      (d.html || '') + fieldsHtml;
+      (d.html || '') + fieldsHtml +
+      renderRelated(d.related) +
+      renderSource(d.source);
+    wireRelatedLinks();
+  }
+
+  function navigateTo(targetId) {
+    if (PROJECTS.some(function (p) { return p.id === targetId; })) { selectProject(targetId); return; }
+
+    var tryInProject = function (pid) {
+      var cats = CATS_BY_PROJECT[pid] || [];
+      var cat = cats.filter(function (c) { return c.id === targetId; })[0];
+      if (cat) {
+        if (state.project !== pid) { state.project = pid; }
+        state.expandedCat = cat.hasLeaves ? targetId : null;
+        state.selectedLeaf = null;
+        state.rootSelected = false;
+        state.focusId = targetId;
+        showDetail(DETAIL[targetId], targetId);
+        render();
+        afterSelect();
+        return true;
+      }
+      for (var i = 0; i < cats.length; i++) {
+        var cid = cats[i].id;
+        if (LEAVES[cid] && LEAVES[cid].some(function (l) { return l.id === targetId; })) {
+          state.project = pid;
+          state.expandedCat = cid;
+          state.selectedLeaf = targetId;
+          state.rootSelected = false;
+          state.focusId = targetId;
+          showDetailLeaf(DETAIL[targetId], targetId);
+          render();
+          afterSelect();
+          return true;
+        }
+      }
+      return false;
+    };
+
+    if (tryInProject(state.project)) return;
+    for (var pid in CATS_BY_PROJECT) {
+      if (pid !== state.project && tryInProject(pid)) return;
+    }
   }
 
   function buildPrintIndex() {
@@ -1003,10 +1196,10 @@
   }
 
   function showInitialDetail() {
-    if (state.selectedLeaf && DETAIL[state.selectedLeaf]) { showDetailLeaf(DETAIL[state.selectedLeaf]); return; }
-    if (state.expandedCat && DETAIL[state.expandedCat]) { showDetail(DETAIL[state.expandedCat]); return; }
-    if (state.project && DETAIL[state.project]) { showDetail(DETAIL[state.project]); return; }
-    showDetail(DETAIL['root']);
+    if (state.selectedLeaf && DETAIL[state.selectedLeaf]) { showDetailLeaf(DETAIL[state.selectedLeaf], state.selectedLeaf); return; }
+    if (state.expandedCat && DETAIL[state.expandedCat]) { showDetail(DETAIL[state.expandedCat], state.expandedCat); return; }
+    if (state.project && DETAIL[state.project]) { showDetail(DETAIL[state.project], state.project); return; }
+    showDetail(DETAIL['root'], 'root');
   }
 
   document.addEventListener('keydown', function (e) {
@@ -1015,7 +1208,7 @@
       state.expandedCat = null;
       state.selectedLeaf = null;
       state.focusId = wasExpanded;
-      showDetail(DETAIL[state.project]);
+      showDetail(DETAIL[state.project], state.project);
       render();
       updateHash();
     } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
