@@ -1,8 +1,10 @@
 import json
 import os
 import re
+import subprocess
 
 import generate_atlas as ga
+from generate_dashboard import list_project_names
 
 
 def _extract(content, name, end_marker):
@@ -68,6 +70,54 @@ def test_engine_is_extracted_not_duplicated(git_repo, tmp_path):
     content = out.read_text()
     assert content.count("function navigateTo") == 1
     assert content.count("<script>") == 1
+
+
+def _make_repo(path, commit_message):
+    path.mkdir()
+    subprocess.run(["git", "init", "-q"], cwd=path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=path, check=True)
+    subprocess.run(["git", "config", "user.name", "test"], cwd=path, check=True)
+    (path / "file.txt").write_text("x")
+    subprocess.run(["git", "add", "."], cwd=path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", commit_message], cwd=path, check=True)
+
+
+def test_two_projects_do_not_leak_commits_into_each_other(tmp_path, monkeypatch):
+    """Regression test for a real bug: every project used the same bare
+    category id ("commits", "memory", etc.), so LEAVES/DETAIL -- which are
+    flat objects shared across all projects once merged -- had the later
+    project's data silently overwrite the earlier one's. kavach showed
+    saarthi's commits because both used the literal id "commits" and
+    saarthi sorts after kavach alphabetically."""
+    monkeypatch.setenv("CLAUDE_HARNESS_PROJECTS_ROOT", str(tmp_path))
+    _make_repo(tmp_path / "alpha", "UNIQUE_ALPHA_COMMIT_MARKER")
+    _make_repo(tmp_path / "zeta", "UNIQUE_ZETA_COMMIT_MARKER")
+
+    assert set(list_project_names(str(tmp_path))) == {"alpha", "zeta"}
+
+    out = tmp_path / "atlas.html"
+    ga.generate(output_path=str(out), focus_cwd=str(tmp_path / "alpha"))
+    content = out.read_text()
+    script = content[content.index("<script>"):content.index("</script>")]
+
+    cats = _extract(script, "CATS_BY_PROJECT", "var LEAVES")
+    leaves = _extract(script, "LEAVES", "var KIND_META")
+    detail = _extract(script, "DETAIL", "var state")
+
+    alpha_commit_cat = next(c["id"] for c in cats["alpha"] if c["label"] == "Recent Commits")
+    zeta_commit_cat = next(c["id"] for c in cats["zeta"] if c["label"] == "Recent Commits")
+    assert alpha_commit_cat != zeta_commit_cat, "category ids collided across projects"
+
+    alpha_leaf_ids = {l["id"] for l in leaves[alpha_commit_cat]}
+    zeta_leaf_ids = {l["id"] for l in leaves[zeta_commit_cat]}
+    assert alpha_leaf_ids.isdisjoint(zeta_leaf_ids)
+
+    alpha_messages = " ".join(detail[i]["fields"][0][1] for i in alpha_leaf_ids)
+    zeta_messages = " ".join(detail[i]["fields"][0][1] for i in zeta_leaf_ids)
+    assert "UNIQUE_ALPHA_COMMIT_MARKER" in alpha_messages
+    assert "UNIQUE_ZETA_COMMIT_MARKER" not in alpha_messages
+    assert "UNIQUE_ZETA_COMMIT_MARKER" in zeta_messages
+    assert "UNIQUE_ALPHA_COMMIT_MARKER" not in zeta_messages
 
 
 def test_no_gate_round_history_or_savings_narrative_claimed(git_repo, tmp_path):

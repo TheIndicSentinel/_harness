@@ -133,6 +133,15 @@ def gate_kind(project_root):
 
 
 def build_project(name, root):
+    # Every category id below is namespaced with the project name (cid()).
+    # LEAVES and DETAIL are FLAT objects shared across every project once
+    # merged in generate() -- an unnamespaced id like "commits" would be
+    # silently overwritten by the next project using the same bare id
+    # (this was a real bug: kavach's commits were replaced by saarthi's,
+    # since saarthi sorts after kavach and both used the literal id "commits").
+    def cid(base):
+        return "%s-%s" % (base, name)
+
     is_repo = os.path.isdir(os.path.join(root, ".git"))
     commits = recent_commits(root, n=8) if is_repo else []
     kind = "product" if (is_repo and commits) else "empty"
@@ -150,8 +159,8 @@ def build_project(name, root):
         )
         for g in (req + sorted(x for x in gates if x not in req and x not in RESERVED_KEYS))
     ) or "<tr><td colspan=3>No gates recorded</td></tr>"
-    cats.append({"id": "gate-status", "label": "Gate Status", "badge": {"pass": "good", "mid": "mixed", "fail": "fail", "none": "neutral"}[gk], "badgeTxt": "", "hasLeaves": False, "kind": "record"})
-    detail["gate-status"] = {
+    cats.append({"id": cid("gate-status"), "label": "Gate Status", "badge": {"pass": "good", "mid": "mixed", "fail": "fail", "none": "neutral"}[gk], "badgeTxt": "", "hasLeaves": False, "kind": "record"})
+    detail[cid("gate-status")] = {
         "title": "Gate Status", "sub": "Current only — gates.json doesn't retain history",
         "html": '<table class="gate-table"><thead><tr><th>Gate</th><th>Required</th><th>Status</th></tr></thead><tbody>%s</tbody></table>' % gate_rows,
         "source": {"file": "%s/.harness/gates.json" % name, "trust": "local record", "generated": NOW},
@@ -165,8 +174,8 @@ def build_project(name, root):
         for f, present in zip(DOC_FILES, docs)
     )
     adopted = sum(1 for d in docs if d)
-    cats.append({"id": "docs", "label": "Docs Adopted", "badge": "good" if adopted == len(DOC_FILES) else "mixed", "badgeTxt": "%d/%d" % (adopted, len(DOC_FILES)), "hasLeaves": False, "kind": "record"})
-    detail["docs"] = {"title": "Docs Adopted", "sub": "%d of %d standard docs" % (adopted, len(DOC_FILES)),
+    cats.append({"id": cid("docs"), "label": "Docs Adopted", "badge": "good" if adopted == len(DOC_FILES) else "mixed", "badgeTxt": "%d/%d" % (adopted, len(DOC_FILES)), "hasLeaves": False, "kind": "record"})
+    detail[cid("docs")] = {"title": "Docs Adopted", "sub": "%d of %d standard docs" % (adopted, len(DOC_FILES)),
                        "html": '<div class="docs-mini">%s</div>' % tiles,
                        "source": {"file": "%s/docs/" % name, "trust": "local record", "generated": NOW}}
 
@@ -177,8 +186,8 @@ def build_project(name, root):
         )
         for label, val, isok in project_health(root)
     )
-    cats.append({"id": "health", "label": "Project Health", "badge": "good" if ok == total else "mixed", "badgeTxt": "%d/%d" % (ok, total), "hasLeaves": False, "kind": "record"})
-    detail["health"] = {"title": "Project Health", "sub": "%d/%d · informational, not a gate" % (ok, total),
+    cats.append({"id": cid("health"), "label": "Project Health", "badge": "good" if ok == total else "mixed", "badgeTxt": "%d/%d" % (ok, total), "hasLeaves": False, "kind": "record"})
+    detail[cid("health")] = {"title": "Project Health", "sub": "%d/%d · informational, not a gate" % (ok, total),
                          "html": '<div class="decision-mini">%s</div>' % hrows,
                          "source": {"file": "/harness-status %s" % name, "trust": "local record", "generated": NOW}}
 
@@ -198,27 +207,27 @@ def build_project(name, root):
             '<g font-family="var(--font-mono)" font-size="8" fill="var(--ink-faint)"><text x="30" y="134">%s</text><text x="290" y="134" text-anchor="end">%s</text></g>'
             '</svg>'
         ) % (poly, pts, e(chart["dates"][0]), e(chart["dates"][-1]))
-        cats.append({"id": "tokens", "label": "Token Usage", "badge": "neutral", "badgeTxt": "", "hasLeaves": False, "kind": "record"})
-        detail["tokens"] = {"title": "Token Usage", "sub": "%d log rows · %d real session(s)" % (chart["rows"], chart["sessions"]),
+        cats.append({"id": cid("tokens"), "label": "Token Usage", "badge": "neutral", "badgeTxt": "", "hasLeaves": False, "kind": "record"})
+        detail[cid("tokens")] = {"title": "Token Usage", "sub": "%d log rows · %d real session(s)" % (chart["rows"], chart["sessions"]),
                              "html": '<div class="mini-chart">%s</div>' % chart_svg,
                              "source": {"file": "%s/docs/COST_LOG.md" % name, "trust": "local record", "generated": NOW}}
 
     if commits:
-        leaves["commits"] = [{"id": "c-%s-%d" % (name, i), "label": h, "status": "neutral", "kind": "record"} for i, (h, m, d) in enumerate(commits)]
+        leaves[cid("commits")] = [{"id": "c-%s-%d" % (name, i), "label": h, "status": "neutral", "kind": "record"} for i, (h, m, d) in enumerate(commits)]
         for i, (h, msg, cdate) in enumerate(commits):
             detail["c-%s-%d" % (name, i)] = {
                 "title": h, "sub": cdate, "chip": "neutral",
                 "fields": [["Message", e(msg)]],
                 "source": {"file": "%s git log" % name, "commit": h, "trust": "local record"},
             }
-        cats.append({"id": "commits", "label": "Recent Commits", "badge": "neutral", "badgeTxt": str(len(commits)), "hasLeaves": True, "kind": "record"})
-        detail["commits"] = {"title": "Recent Commits", "sub": "Last %d, verbatim from git log — no interpretation" % len(commits),
+        cats.append({"id": cid("commits"), "label": "Recent Commits", "badge": "neutral", "badgeTxt": str(len(commits)), "hasLeaves": True, "kind": "record"})
+        detail[cid("commits")] = {"title": "Recent Commits", "sub": "Last %d, verbatim from git log — no interpretation" % len(commits),
                               "html": "<p style=\"font-size:12.8px;color:var(--ink-soft);\">Click a commit for its raw message. No skill/prompt/savings narrative is attached — that requires reading and judgment this script doesn't do.</p>",
                               "source": {"file": "%s git log" % name, "trust": "local record", "generated": NOW}}
 
     mfiles = memory_files(root)
     if mfiles:
-        leaves["memory"] = [{"id": "m-%s-%d" % (name, i), "label": f.replace(".md", ""), "status": "neutral", "kind": "record"} for i, f in enumerate(mfiles)]
+        leaves[cid("memory")] = [{"id": "m-%s-%d" % (name, i), "label": f.replace(".md", ""), "status": "neutral", "kind": "record"} for i, f in enumerate(mfiles)]
         for i, f in enumerate(mfiles):
             snippet = read_snippet(os.path.join(memory_dir_for(root), f))
             detail["m-%s-%d" % (name, i)] = {
@@ -226,8 +235,8 @@ def build_project(name, root):
                 "html": '<pre style="white-space:pre-wrap;font-family:var(--font-mono);font-size:11px;line-height:1.6;color:var(--ink-soft);">%s</pre>' % e(snippet),
                 "source": {"file": "~/.claude/projects/.../memory/%s" % f, "trust": "local record"},
             }
-        cats.append({"id": "memory", "label": "Project Memory", "badge": "neutral", "badgeTxt": str(len(mfiles)), "hasLeaves": True, "kind": "record"})
-        detail["memory"] = {"title": "Project Memory", "sub": "%d file(s) — raw content, not summarized" % len(mfiles),
+        cats.append({"id": cid("memory"), "label": "Project Memory", "badge": "neutral", "badgeTxt": str(len(mfiles)), "hasLeaves": True, "kind": "record"})
+        detail[cid("memory")] = {"title": "Project Memory", "sub": "%d file(s) — raw content, not summarized" % len(mfiles),
                              "html": "<p style=\"font-size:12.8px;color:var(--ink-soft);\">Native Claude Code memory. Shown verbatim (truncated) — this script reads, it doesn't synthesize.</p>",
                              "source": {"file": memory_dir_for(root), "trust": "local record"}}
 
