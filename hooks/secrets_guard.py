@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PreToolUse hook (matcher: Edit|Write|Bash): guards a narrow list of
+"""PreToolUse hook (matcher: Edit|Write|Read|Grep|Bash): guards a narrow list of
 sensitive filenames. Only active when cwd is under the harness's projects
 root (see gate_lib.projects_root(), overridable via
 CLAUDE_HARNESS_PROJECTS_ROOT) — no-ops elsewhere.
@@ -7,7 +7,11 @@ CLAUDE_HARNESS_PROJECTS_ROOT) — no-ops elsewhere.
 Semantics: "ask", not hard-deny — emits the official PreToolUse JSON decision
 so the user gets a permission prompt with the reason and can approve a
 genuinely-intended operation, instead of being told to leave Claude Code.
-- Edit/Write: asks when the target file matches a sensitive pattern.
+- Edit/Write/Read: asks when the target file matches a sensitive pattern.
+  Read is covered here (not only by settings.json's permissions.deny) because
+  a plugin install doesn't get that deny list -- without this, a plugin user
+  had no guard on reading .env/keys into context at all.
+- Grep: asks when its `path` or `glob` targets a sensitive-looking file.
 - Bash: asks when the command string mentions a sensitive-looking filename
   (covers `cat foo.pem`, `cp x credentials.json`, redirects — heuristic and
   deliberately over-broad, which is fine because a false positive costs one
@@ -82,18 +86,20 @@ def main() -> int:
                 )
         return 0
 
-    file_path = tool_input.get("file_path") or tool_input.get("path")
-    if not file_path:
-        return 0
-
-    basename = os.path.basename(file_path)
-    pattern = matches_blocklist(basename)
-    if pattern:
-        return ask(
-            f"Harness secrets guard: '{basename}' matches sensitive-file pattern "
-            f"'{pattern}'. Approve only if editing key/credential material is intended "
-            f"(blocklist: _harness/hooks/secrets_guard.py)."
-        )
+    targets = [tool_input.get("file_path"), tool_input.get("path")]
+    if tool_name == "Grep":
+        targets.append(tool_input.get("glob"))
+    for target in targets:
+        if not target or not isinstance(target, str):
+            continue
+        basename = os.path.basename(target.rstrip("/"))
+        pattern = matches_blocklist(basename)
+        if pattern:
+            return ask(
+                f"Harness secrets guard: '{basename}' matches sensitive-file pattern "
+                f"'{pattern}'. Approve only if {tool_name or 'this'} access to key/credential "
+                f"material is intended (blocklist: _harness/hooks/secrets_guard.py)."
+            )
 
     return 0
 

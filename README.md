@@ -28,6 +28,7 @@ Then run `/harness-init` once — a plugin install doesn't auto-load an always-o
 | Ops | `incident-response`, `support-triage` |
 | Business | `pricing-strategy`, `gtm-marketing`, `/cost-report` |
 | Program mgmt | `weekly-review` / `/weekly-review` |
+| Memory & context | `/wrap-up` (session learnings → project memory), context-hygiene rules in the umbrella `CLAUDE.md` |
 | Scaffolding | `/new-project`, `/adopt-project`, `/harness-status`, `/sunset-project` |
 
 Every project gets a standard `docs/` set (PRD, MARKETING, ROADMAP, CHANGELOG, OPERATIONS, BUSINESS, COMPLIANCE, CONNECTORS, RELEASE_CHECKLIST, COST_LOG) scaffolded from `templates/new-project/`.

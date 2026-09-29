@@ -784,7 +784,7 @@
       source: { file: 'hooks/release_gate.py', trust: 'local record', generated: '2026-07-17' } },
     hk3: { title: 'session_log.py', sub: 'Stop · every session', chip: 'neutral',
       fields: [
-        ['Trigger','Fires on the Stop hook at the end of every session.'],
+        ['Trigger','Fires on the SessionEnd hook, once per session.'],
         ['Behavior','Parses the session transcript (JSONL) into an estimated token count and appends a row to docs/COST_LOG.md — the harness\'s own best-effort, non-authoritative usage record.'],
         ['Fail mode','N/A — observational only, never blocks or asks.'],
         ['Scope / limits','Best-effort only — depends on an undocumented transcript shape. See docs/OTEL.md for the full trust ranking above this.']

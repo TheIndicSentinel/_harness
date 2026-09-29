@@ -199,13 +199,17 @@ def is_working_tree_dirty(project_root: str) -> bool:
     though HEAD still matches the gate record. .harness/ is excluded because
     it's routinely untracked-by-design (gates.json/budget.json are local
     sidecar files, not committed by default -- see docs/CI_GATE_CHECK.md) so
-    its mere presence isn't unreviewed code. Fails safe: a git error (e.g.
+    its mere presence isn't unreviewed code. docs/COST_LOG.md is excluded too:
+    session_log.py appends to it at the end of every session, so counting it
+    would make every ship blocked-by-default (commit it -> gate goes stale ->
+    re-review -> another session -> dirty again). It's a local log, not
+    shipped code. Fails safe: a git error (e.g.
     not a repo) counts as dirty, since "unknown" shouldn't read as clean.
     """
     try:
         result = subprocess.run(
             ["git", "-C", project_root, "status", "--porcelain", "--",
-             ".", ":(exclude).harness"],
+             ".", ":(exclude).harness", ":(exclude)docs/COST_LOG.md"],
             capture_output=True,
             text=True,
             timeout=5,

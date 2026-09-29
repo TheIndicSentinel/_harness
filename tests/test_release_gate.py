@@ -6,6 +6,7 @@ import sys
 import pytest
 
 import gate_lib
+from conftest import commit
 import release_gate
 
 HOOK_PATH = os.path.join(
@@ -115,6 +116,23 @@ class TestReleaseGateHookEndToEnd:
             [sys.executable, HOOK_PATH], input="not json", capture_output=True, text=True
         )
         assert result.returncode == 0
+
+    def test_cost_log_append_does_not_count_as_dirty(self, git_repo):
+        """Regression: session_log.py appends to docs/COST_LOG.md every
+        session. If that counted as dirty, every ship would be blocked, and
+        committing the log would make the gate stale -- a loop with no exit."""
+        (git_repo / "docs").mkdir()
+        (git_repo / "docs" / "COST_LOG.md").write_text("| Date |\n")
+        commit(git_repo, "add cost log")
+        gate_lib.record_gate(str(git_repo), "privacy_guardrails_review", "pass", "no findings, reviewed")
+        with open(git_repo / "docs" / "COST_LOG.md", "a") as f:
+            f.write("| 2026-09-29 | abcd1234 | 1m00s | 10/5 | 100 |\n")
+        env = {**os.environ, "CLAUDE_HARNESS_PROJECTS_ROOT": os.path.dirname(str(git_repo))}
+        code, stderr = run_hook(
+            {"cwd": str(git_repo), "tool_name": "Bash", "tool_input": {"command": "npm publish"}},
+            env,
+        )
+        assert code == 0, stderr
 
     def test_blocks_on_dirty_worktree_even_with_passing_gate(self, git_repo):
         """The core dirty-worktree regression: a passing gate for the

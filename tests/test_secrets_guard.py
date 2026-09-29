@@ -59,6 +59,37 @@ class TestSecretsGuard:
         data = json.loads(out)
         assert data["hookSpecificOutput"]["permissionDecision"] == "ask"
 
+    def test_asks_on_read_of_env(self, tmp_path):
+        """Read must be guarded by the hook itself: a plugin install doesn't
+        get settings.json's permissions.deny list."""
+        proj = tmp_path / "proj"
+        proj.mkdir()
+        code, out = run_hook(
+            {"cwd": str(proj), "tool_name": "Read", "tool_input": {"file_path": str(proj / ".env.local")}},
+            env_with_root(tmp_path),
+        )
+        assert code == 0
+        assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "ask"
+
+    def test_asks_on_grep_glob_targeting_keys(self, tmp_path):
+        proj = tmp_path / "proj"
+        proj.mkdir()
+        code, out = run_hook(
+            {"cwd": str(proj), "tool_name": "Grep", "tool_input": {"pattern": "KEY", "glob": "**/*.pem"}},
+            env_with_root(tmp_path),
+        )
+        assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "ask"
+
+    def test_silent_on_benign_grep(self, tmp_path):
+        proj = tmp_path / "proj"
+        proj.mkdir()
+        code, out = run_hook(
+            {"cwd": str(proj), "tool_name": "Grep", "tool_input": {"pattern": "TODO", "path": str(proj / "src")}},
+            env_with_root(tmp_path),
+        )
+        assert code == 0
+        assert out.strip() == ""
+
     def test_silent_on_benign_edit(self, tmp_path):
         proj = tmp_path / "proj"
         proj.mkdir()

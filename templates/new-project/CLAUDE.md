@@ -42,6 +42,8 @@
 ## Non-obvious gotchas
 -
 
+Module-specific rules (e.g. only relevant under `core/inference/`) belong in `.claude/rules/<area>.md` with a `paths:` frontmatter glob, not here — they then load only when that code is touched.
+
 ---
 
 ## Domain rules
