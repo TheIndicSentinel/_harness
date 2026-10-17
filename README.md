@@ -1,11 +1,6 @@
 # Solo-Founder Harness
 
-A full-lifecycle **Claude Code** harness for solo/indie founders building privacy-first, guardrail-first software — idea through sunset, with a release gate that's mechanically enforced, not just advice.
-
-## Scope (read this before assuming more than it does)
-This is a **Claude Code solo-founder project harness** — not a general Anthropic governance, monitoring, or token-accounting platform. It has no visibility into and does not govern: the Messages API used directly or via an SDK, Bedrock/Vertex, Claude.ai (web/subscription), Claude Desktop, Claude for Sheets, other extensions, or MCP connectors used outside Claude Code. Its release gate (`release_gate.py`) only sees Bash commands and MCP tool calls made *through Claude Code* — it cannot see or block a deploy triggered any other way. If you build a product that calls the Anthropic API directly, or operate in an organization with multiple engineers, most of this harness's assumptions (one operator, one machine, git as the audit trail) stop holding and a different design is warranted.
-
-Covers: idea validation, market research, PRD writing, QA, legal/compliance, release notes, launch checklists, incident response, support triage, pricing, weekly portfolio review, and end-of-life — each backed by a Claude Code skill, and the ship-blocking gate backed by an actual `PreToolUse` hook, not a prompt someone can talk past.
+A **Claude Code** harness for solo founders building privacy-first, guardrail-first software, from idea to sunset, with a release gate that a hook enforces rather than a prompt someone can talk past.
 
 ## Install (Claude Code plugin)
 
@@ -14,7 +9,17 @@ Covers: idea validation, market research, PRD writing, QA, legal/compliance, rel
 /plugin install solo-founder-harness
 ```
 
-Then run `/harness-init` once — a plugin install doesn't auto-load an always-on CLAUDE.md the way this repo's own symlink-based install does, so `/harness-init` sets that up deliberately (projects-root location, the non-negotiable-defaults block) instead of leaving it silently missing.
+Then run `/harness-init` once. A plugin install doesn't load an always-on `CLAUDE.md`, so `/harness-init` adds the defaults block and sets the projects-root location instead of leaving them silently missing. Running it from a local clone with symlinks instead: see [`docs/LOCAL_INSTALL.md`](docs/LOCAL_INSTALL.md).
+
+## Status and evidence
+
+- **Tested:** release gating (`release_gate.py`, the gate records, the CI gate script) and secrets control (`secrets_guard.py`, the deny template) have unit tests, and CI runs them on Linux and macOS (247 tests).
+- **Not demonstrated:** that the memory and handoff files make sessions cheaper or faster. The one baseline pilot (five tasks, one run per cell) was within noise. A follow-up with 27 prompts suggests a committed `CLAUDE.md` changes answers about project-specific rules, while memory detail files are read only selectively; with three runs per cell, treat that as a lead. Details and caveats: [`docs/MEASUREMENT.md`](docs/MEASUREMENT.md).
+- **Untested:** the GitHub Actions gate check has not yet run on a real release tag. The local hook is a fast nudge, not a trust boundary, and gate records are self-attested.
+
+## Scope
+
+A Claude Code project harness for one operator on one machine, with git as the audit trail. It does not see or govern the Messages API or SDKs, Bedrock/Vertex, Claude.ai or Desktop, or MCP connectors used outside Claude Code, and its release gate cannot block a deploy triggered any other way. Teams or products that call the API directly need a different design. Token and cost figures are best-effort estimates, not billing.
 
 ## What you get
 
@@ -28,10 +33,12 @@ Then run `/harness-init` once — a plugin install doesn't auto-load an always-o
 | Ops | `incident-response`, `support-triage` |
 | Business | `pricing-strategy`, `gtm-marketing`, `/cost-report` |
 | Program mgmt | `weekly-review` / `/weekly-review` |
-| Memory & context | `/wrap-up` (session learnings → project memory), context-hygiene rules in the umbrella `CLAUDE.md` |
+| Memory loop | `/wrap-up` (admission-tested session learnings and a handoff), `memory_lint.py`, a SessionStart memory line, context rules in the umbrella `CLAUDE.md` |
+| Verification (opt-in) | Stop hook that checks a configured command before a session ends; off by default, see [`docs/VERIFICATION.md`](docs/VERIFICATION.md) |
+| Atlas | `/harness-atlas` or `harness-ui`: a local page of projects, tokens per project and task, gates, docs, memory, hooks, and a cost-vs-benefit panel |
 | Scaffolding | `/new-project`, `/adopt-project`, `/harness-status`, `/sunset-project` |
 
-Every project gets a standard `docs/` set (PRD, MARKETING, ROADMAP, CHANGELOG, OPERATIONS, BUSINESS, COMPLIANCE, CONNECTORS, RELEASE_CHECKLIST) scaffolded from `templates/new-project/`.
+Every project gets a standard `docs/` set (PRD, MARKETING, ROADMAP, CHANGELOG, OPERATIONS, BUSINESS, COMPLIANCE, CONNECTORS, RELEASE_CHECKLIST) from `templates/new-project/`.
 
 ## The release gate (the actual point of this harness)
 
@@ -66,23 +73,15 @@ The real risk isn't the harness failing — it's installing it and never actuall
 
 Privacy-by-default and guardrails-first aren't features here — they're defaults every skill in this bundle assumes. If that's not the product philosophy you want, this harness will actively push back on decisions that contradict it (see `privacy-guardrails-review`'s explicit "don't record pass to unblock the user faster" rule). That's by design, not a bug to route around.
 
-## Install as a plugin
-`/plugin marketplace add TheIndicSentinel/_harness`, then `/plugin install solo-founder-harness`, then run `/harness-init` once (a plugin install doesn't load the umbrella `CLAUDE.md`).
-
 ## Development
 
-Run the tests in a venv: `python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/pytest -q` (the hooks and scripts need only the standard library; pytest is for development, so a bare `pytest` on a system Python without it fails by design).
+Run the tests in a venv: `python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/pytest -q`. The hooks and scripts need only the standard library; pytest is for development, so a bare `pytest` on a Python without it fails by design.
 
-Source of truth for this plugin is this repo. The same content also installs via a local symlink setup (see `CLAUDE.md`'s "Where this harness lives") for the original single-machine use case — both paths are kept working; new content should use `"${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}"` in any Bash command so it resolves correctly under either.
+New content should use `"${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}"` in Bash commands so it resolves under both install modes. `tests/test_portability.py` fails if an author-specific absolute path creeps in. `settings.json` is the shared template (hooks and secrets denies) for the local install; a plugin install uses `hooks/hooks.json` instead.
 
-**`settings.json` is the original symlink install's config.** It is now portable (hook commands use `"${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}"`, allow rules use wildcards), so it can be adopted on another machine as-is. A plugin install doesn't use it: it gets `hooks/hooks.json` plus normal permission prompts. `tests/test_portability.py` fails if an author-specific absolute path creeps back in. Since 0.5.1 `~/.claude/settings.json` is a real file, no longer a symlink to this one: personal preferences (model, theme) stay in your live file and out of the repo. This file is the shared template (hooks + secrets denies); changes here don't propagate by themselves, so diff and merge them into your live settings by hand. `~/.claude/skills` is still a symlink into this repo's `skills/`, so desktop-synced skills (`skills/synced/`, gitignored) and anything you install by hand appear there; exclude those locally with `.git/info/exclude`.
+## Reference docs
+[`docs/MEASUREMENT.md`](docs/MEASUREMENT.md) (baseline protocol, what the atlas panel does and does not show) · [`docs/VERIFICATION.md`](docs/VERIFICATION.md) (making "done" mean checked) · [`docs/CI_GATE_CHECK.md`](docs/CI_GATE_CHECK.md) (CI as the authoritative release gate) · [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) (what we rely on in Claude Code) · [`docs/OTEL.md`](docs/OTEL.md) (token/cost sources ranked by trust) · [`docs/DATA_RETENTION.md`](docs/DATA_RETENTION.md) · [`docs/LIFECYCLE.md`](docs/LIFECYCLE.md) · [`docs/LOCAL_INSTALL.md`](docs/LOCAL_INSTALL.md) · [`SECURITY.md`](SECURITY.md)
 
 ## License
 
-See `.claude-plugin/plugin.json` — pick and set a real license before treating this as publicly reusable; it currently ships as a placeholder.
-
-## See the live mind tree
-`/harness-atlas` inside Claude Code, or `harness-ui` in a terminal, regenerates `~/.claude/harness-atlas.html` from current data and opens it: projects worked on, tokens per project and per task, gates, docs, memory, hooks and history. `harness-ui` is a one-line wrapper (`python3 scripts/generate_atlas.py --open`); if it is missing, `python3 scripts/generate_atlas.py --open` does the same.
-
-## Reference docs
-`docs/VERIFICATION.md` (making "done" mean checked: prompt, `/goal`, opt-in Stop hook, fresh review) · `docs/CI_GATE_CHECK.md` (CI as the authoritative release gate) · `docs/COMPATIBILITY.md` (what we rely on in Claude Code, drift checks) · `docs/OTEL.md` (token/cost sources ranked by trust) · `docs/DATA_RETENTION.md` · `docs/LIFECYCLE.md`.
+Not set yet. `.claude-plugin/plugin.json` carries a placeholder; choose a license before treating this as reusable.
