@@ -12,11 +12,13 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "hooks"))
+from settings_lib import settings_drift  # noqa: E402
 from budget_lib import alert_threshold_crossed, budget_status, is_budget_skipped  # noqa: E402
 from gate_lib import (  # noqa: E402
     RESERVED_KEYS,
     check_passing,
     current_commit,
+    existing_cost_log,
     load_gates,
     projects_root,
     release_commands,
@@ -27,7 +29,6 @@ PROJECTS_ROOT = projects_root()
 DOC_FILES = [
     "PRD.md",
     "MARKETING.md",
-    "COST_LOG.md",
     "RELEASE_CHECKLIST.md",
     "ROADMAP.md",
     "CHANGELOG.md",
@@ -86,8 +87,8 @@ def gates_summary(project_root):
 
 
 def session_count(project_root):
-    log_path = os.path.join(project_root, "docs", "COST_LOG.md")
-    if not os.path.isfile(log_path):
+    log_path = existing_cost_log(project_root)
+    if not log_path:
         return 0
     count = 0
     with open(log_path) as f:
@@ -230,6 +231,47 @@ def ci_gate_status(project_root):
     return "present but not wired into any workflow"
 
 
+def legacy_cost_log_tracked(project_root):
+    """True when the old in-repo docs/COST_LOG.md is tracked by git (a leak
+    risk: it was published by accident once). False when absent/untracked."""
+    if not os.path.isfile(os.path.join(project_root, "docs", "COST_LOG.md")):
+        return False
+    r = subprocess.run(
+        ["git", "-C", project_root, "ls-files", "--error-unmatch", "docs/COST_LOG.md"],
+        capture_output=True, text=True, timeout=5,
+    )
+    return r.returncode == 0
+
+
+def gate_record_committable(project_root):
+    """False when git ignores .harness/gates.json in a project that has the CI
+    gate check: CI can then never see a gate record, so the check can only
+    ever fail. None when not a git repo or the project has no CI gate check."""
+    if not os.path.isdir(os.path.join(project_root, ".git")):
+        return None
+    # Only matters for projects that use the CI gate check; a project that
+    # deliberately keeps gate records local (e.g. a research repo with no
+    # release pipeline) is not misconfigured.
+    if not os.path.isfile(os.path.join(project_root, ".github", "workflows", "harness-gate-check.yml")):
+        return None
+    r = subprocess.run(
+        ["git", "-C", project_root, "check-ignore", "-q", ".harness/gates.json"],
+        capture_output=True, text=True, timeout=5,
+    )
+    return r.returncode != 0  # check-ignore exits 0 when the path IS ignored
+
+
+def agents_md_state(project_root):
+    """None: no AGENTS.md. 'loaded': a project CLAUDE.md imports it. 'ignored':
+    AGENTS.md exists but Claude Code won't read it -- once any CLAUDE.md exists
+    in the working dir or above (the umbrella one always does), AGENTS.md is
+    skipped unless a CLAUDE.md imports it."""
+    if not os.path.isfile(os.path.join(project_root, "AGENTS.md")):
+        return None
+    text = _read_file(os.path.join(project_root, "CLAUDE.md")) or ""
+    return "loaded" if re.search(r"^@AGENTS\.md\b", text, re.MULTILINE) else "ignored"
+
+
 def project_health(project_root):
     """The full checklist: (label, status_string, is_ok) tuples. is_ok is a
     simple heuristic for the compact table score, not a strict pass/fail --
@@ -240,6 +282,10 @@ def project_health(project_root):
 
     ci = ci_gate_status(project_root)
     checks.append(("CI gate wired", ci, ci.startswith("wired into")))
+
+    committable = gate_record_committable(project_root)
+    if committable is False:
+        checks.append(("Gate record committable (CI can see it)", ".harness/ is git-ignored — CI gate check cannot verify anything", False))
 
     rel_cmd = release_command_status(project_root)
     if rel_cmd is None:
@@ -264,6 +310,15 @@ def project_health(project_root):
         checks.append(("Budget set or skipped", "intentionally skipped", True))
     else:
         checks.append(("Budget set or skipped", "no decision recorded", False))
+
+    agents = agents_md_state(project_root)
+    if agents == "loaded":
+        checks.append(("AGENTS.md read by Claude Code", "yes (imported by CLAUDE.md)", True))
+    elif agents == "ignored":
+        checks.append(("AGENTS.md read by Claude Code", "NO — add a CLAUDE.md starting with `@AGENTS.md`", False))
+
+    if legacy_cost_log_tracked(project_root):
+        checks.append(("Cost log kept out of git", "docs/COST_LOG.md is TRACKED — git rm --cached it", False))
 
     connectors = connectors_reviewed(project_root)
     if connectors is None:
@@ -359,6 +414,18 @@ def print_detail(name):
         print(f"  [{'x' if is_ok else ' '}] {label}: {value}")
 
 
+def print_settings_drift():
+    drift = settings_drift()
+    if drift is None:
+        return
+    if not drift:
+        print("\nLive settings.json: in sync with the harness template.")
+        return
+    print("\nLive settings.json has drifted from the harness template (merge by hand; the repo copy no longer propagates):")
+    for line in drift:
+        print(f"  - {line}")
+
+
 def main():
     if len(sys.argv) > 1:
         print_detail(sys.argv[1])
@@ -368,6 +435,7 @@ def main():
             print("No projects found under ~/Documents/Projects/ (besides _harness).")
             return
         print_table(names)
+    print_settings_drift()
 
 
 if __name__ == "__main__":

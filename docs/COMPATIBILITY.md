@@ -1,0 +1,35 @@
+# Compatibility policy
+
+Claude Code changes quickly and parts of what this harness touches are not a stable public contract. This file says what we rely on, how we notice drift, and what we promise.
+
+## What the harness relies on
+| Surface | Used for | Stability |
+|---|---|---|
+| Hook events `SessionStart`, `PreToolUse`, `Stop`, `SessionEnd` and their stdin JSON (`cwd`, `tool_name`, `tool_input`, `transcript_path`, `session_id`) | gates, secrets guard, memory line, verification, cost log | documented |
+| Hook decisions: exit 2 blocks; `hookSpecificOutput.permissionDecision` = `ask` | gates, secrets guard | documented |
+| Plugin manifest + `hooks/hooks.json`, `${CLAUDE_PLUGIN_ROOT}` | plugin install | documented |
+| Skill/command frontmatter: `name`, `description`, `argument-hint`, `disable-model-invocation` | skills, commands | documented |
+| Native memory dir `~/.claude/projects/<non-alphanumerics → ->/memory/` and `MEMORY.md` | memory lint, SessionStart line, `/wrap-up` | directory convention observed, **not a documented contract** |
+| Session transcript JSONL (`message.usage`, timestamps) | cost log | **undocumented**; best-effort. If it breaks, switch to OpenTelemetry (`docs/OTEL.md`) rather than patch the parser |
+
+## How drift is caught
+- `tests/` runs on Ubuntu and macOS on every push, including portability and hook-behaviour tests.
+- `tests/test_compat.py` is a **typo guard**: it fails if a wired hook event isn't in an event list that was copied from the docs on a known date. It cannot notice the docs changing; refreshing that list is part of each audit.
+- The real drift signals are the next two: `python3 scripts/compat_check.py` reports the installed Claude Code version against the version the harness was last audited on, and which optional features it supports.
+- CI runs `claude plugin validate` on a pinned Claude Code release (informational job). Note the scope: validating the folder (`.`) checks only the marketplace manifest; validating `.claude-plugin/plugin.json` is what inspects `hooks/hooks.json` (it caught an unquoted `${CLAUDE_PLUGIN_ROOT}` and would reject an unknown hook type). The job runs both.
+
+## What we promise
+- Fail-open for infrastructure errors in quality hooks; fail-closed for the release gate once a ship action is recognised.
+- A harness release states the Claude Code version it was audited against in `CHANGELOG.md`.
+- Optional features that need a newer Claude Code are off by default and documented here, never assumed.
+
+## Updating Claude Code
+1. Update, then run `python3 scripts/compat_check.py` and the test suite.
+2. Re-read the hooks and memory pages of the official docs for changes; update `KNOWN_HOOK_EVENTS` in `tests/test_compat.py` and `AUDITED_AGAINST` in `scripts/compat_check.py` together.
+3. Record the audit in `CHANGELOG.md`.
+
+## Features gated on a Claude Code version
+- **`onFailure: "block"` (>= 2.1.295): enabled on `release_gate.py` only**, in `hooks/hooks.json` and `settings.json`. A hook that can't start, exits with anything other than 0 or 2, times out, or prints unparseable JSON then blocks the tool call instead of letting it through. Older versions ignore the key (checked: 2.1.285's validator accepts it), so the fail-open hole stays there until they update.
+  - Deliberately **not** on `secrets_guard.py`: a crash there would lock out Read/Edit/Grep, which is the recovery path. Documented as no effect on `Stop` hooks, so not on `verify_before_stop.py` either.
+  - Trade-off accepted: if `python3` itself is missing, every Bash call is blocked until the hook is fixed or removed from settings (Edit is not matched, so Claude can still repair `settings.json`).
+- **Launcher caveat:** `claude update` installs new versions under `~/.local/share/claude/versions/`. If `~/.local/bin/claude` is a copied binary rather than a symlink into that directory, it keeps running the old version; `claude --version` after updating tells you which you're on.

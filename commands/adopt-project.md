@@ -1,6 +1,7 @@
 ---
 description: Retrofit an existing project (that predates the harness) with the missing docs — never overwrites anything that already exists
 argument-hint: [path, defaults to current project]
+disable-model-invocation: true
 ---
 
 Bring an existing project under the harness's projects root (defaults to `~/Documents/Projects/`; overridable via `CLAUDE_HARNESS_PROJECTS_ROOT`) into the harness. Target directory: `$ARGUMENTS` if given, otherwise the project root of the current working directory (walk up to the first directory directly under the projects root if cwd is nested deeper).
@@ -14,7 +15,6 @@ This command is purely additive — never overwrite, edit, or touch a file that 
    - `docs/PRD.md`
    - `docs/ARCHITECTURE.md`
    - `docs/MARKETING.md`
-   - `docs/COST_LOG.md`
    - `docs/RELEASE_CHECKLIST.md`
    - `docs/ROADMAP.md`
    - `docs/CHANGELOG.md`
@@ -23,6 +23,8 @@ This command is purely additive — never overwrite, edit, or touch a file that 
    - `docs/COMPLIANCE.md`
    - `docs/CONNECTORS.md`
    - `.github/workflows/harness-gate-check.yml` **and** its companion `.github/workflows/harness_gate_check.py` (only if the project already uses GitHub Actions and is missing either — the workflow literally executes the `.py` file, so copy both together or neither; it's an inert reusable workflow until another workflow calls it, so it's safe to add even if unused yet; see `docs/CI_GATE_CHECK.md` in the harness root for wiring instructions)
+   - **If the project has an `AGENTS.md` but no `CLAUDE.md`:** create a `CLAUDE.md` whose first line is `@AGENTS.md`, plus a few Claude-specific lines (verify command, staging rule). The umbrella `CLAUDE.md` above every project makes Claude Code ignore `AGENTS.md` unless a `CLAUDE.md` imports it. Never overwrite an existing `CLAUDE.md`; if one exists without the import, propose adding the line.
+   - `.claude/settings.json` (only if missing — a project-level secrets deny list for Read/Edit of `.env`, keys and credentials; plugin installs don't get the harness's user-level deny rules, so this is how they're covered. If the project already has one, merge the `permissions.deny` entries in rather than overwriting; from `templates/new-project/.claude/settings.json`)
    - `.github/CODEOWNERS` (only if the project already uses GitHub and doesn't have one — inert until you actually list an owner for a path, see the file's own comments; from `templates/new-project/.github/CODEOWNERS`)
 3. Do not touch the project's own `CLAUDE.md` under any circumstances — it stays exactly as the project already has it.
 4. Do not create or modify `.harness/gates.json` — that gets created automatically the first time `privacy-guardrails-review` records a result.

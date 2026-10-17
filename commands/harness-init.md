@@ -1,5 +1,6 @@
 ---
 description: One-time setup after installing this harness as a plugin — wires up the projects root and the always-on philosophy block that a plugin install doesn't auto-load the way a symlinked CLAUDE.md does
+disable-model-invocation: true
 ---
 
 Run this once, right after `/plugin install solo-founder-harness` (skip it entirely if you're the original symlink-based install — you already have this). A Claude Code plugin ships skills/agents/commands/hooks, but does **not** give you an always-loaded umbrella CLAUDE.md the way this harness's original symlink install does — this command closes that gap deliberately, with confirmation, rather than silently.

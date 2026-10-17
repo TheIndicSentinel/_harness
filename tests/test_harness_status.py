@@ -180,3 +180,44 @@ class TestProjectHealth:
         after_ok, after_total = hs.project_health_score(str(git_repo))
         assert after_ok == before_ok + 1
         assert after_total == before_total
+
+
+def test_legacy_tracked_cost_log_is_flagged(git_repo):
+    import subprocess
+    import harness_status
+
+    (git_repo / "docs").mkdir()
+    (git_repo / "docs" / "COST_LOG.md").write_text("| Date |\n")
+    assert harness_status.legacy_cost_log_tracked(str(git_repo)) is False  # untracked
+    subprocess.run(["git", "add", "docs/COST_LOG.md"], cwd=git_repo, check=True)
+    assert harness_status.legacy_cost_log_tracked(str(git_repo)) is True
+    labels = [c[0] for c in harness_status.project_health(str(git_repo))]
+    assert "Cost log kept out of git" in labels
+
+
+def test_agents_md_ignored_unless_imported(git_repo):
+    import harness_status
+
+    assert harness_status.agents_md_state(str(git_repo)) is None
+    (git_repo / "AGENTS.md").write_text("# map\n")
+    assert harness_status.agents_md_state(str(git_repo)) == "ignored"
+    (git_repo / "CLAUDE.md").write_text("# notes\nno import here\n")
+    assert harness_status.agents_md_state(str(git_repo)) == "ignored"
+    (git_repo / "CLAUDE.md").write_text("@AGENTS.md\n\n## Claude\n")
+    assert harness_status.agents_md_state(str(git_repo)) == "loaded"
+
+
+def test_gitignored_gate_record_is_flagged_only_with_ci_gate(git_repo):
+    import harness_status
+
+    (git_repo / ".gitignore").write_text(".harness/\n")
+    # no CI gate workflow: deliberately-local records are not a misconfiguration
+    assert harness_status.gate_record_committable(str(git_repo)) is None
+    wf = git_repo / ".github" / "workflows"
+    wf.mkdir(parents=True)
+    (wf / "harness-gate-check.yml").write_text("name: x\n")
+    assert harness_status.gate_record_committable(str(git_repo)) is False
+    labels = [c[0] for c in harness_status.project_health(str(git_repo))]
+    assert "Gate record committable (CI can see it)" in labels
+    (git_repo / ".gitignore").write_text("")
+    assert harness_status.gate_record_committable(str(git_repo)) is True

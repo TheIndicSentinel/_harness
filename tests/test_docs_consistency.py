@@ -33,6 +33,8 @@ def test_every_github_template_file_referenced_in_adopt_project():
     text = _adopt_project_text()
     missing = []
     for root, _dirs, files in os.walk(github_dir):
+        if "__pycache__" in root:  # test-run byproduct, not a template file
+            continue
         for name in files:
             if name not in text:
                 missing.append(os.path.relpath(os.path.join(root, name), TEMPLATE_ROOT))
@@ -46,3 +48,14 @@ def test_new_project_command_copies_dotdirs_explicitly():
     with open(os.path.join(HARNESS_ROOT, "commands", "new-project.md")) as f:
         text = f.read()
     assert "dot-director" in text.lower() or "dotfile" in text.lower()
+
+
+def test_project_claude_settings_template_referenced_in_adopt_project():
+    assert os.path.isfile(os.path.join(TEMPLATE_ROOT, ".claude", "settings.json"))
+    assert ".claude/settings.json" in _adopt_project_text()
+
+
+def test_gate_check_workflow_has_enforce_input_for_non_release_refs():
+    path = os.path.join(TEMPLATE_ROOT, ".github", "workflows", "harness-gate-check.yml")
+    text = open(path).read()
+    assert "enforce:" in text and "default: true" in text and "inputs.enforce" in text

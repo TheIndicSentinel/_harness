@@ -1,5 +1,6 @@
 {
   "name": "solo-founder-harness-marketplace",
+  "description": "Claude Code harness for solo founders: lifecycle skills plus mechanically enforced privacy/release gates.",
   "owner": {
     "name": "bytenomad",
     "email": "inerd1412@gmail.com"

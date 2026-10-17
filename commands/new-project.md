@@ -1,6 +1,7 @@
 ---
 description: Scaffold a new project under the harness's projects root from the harness template
 argument-hint: <name> "<one-line idea>"
+disable-model-invocation: true
 ---
 
 Scaffold a new project. Arguments: `$ARGUMENTS` — first token is the project name (filesystem-safe: letters, digits, hyphens, underscores only), the rest (optionally quoted) is a one-line idea description.

@@ -1,6 +1,7 @@
 ---
 description: Deliberately wind down a project — user-data obligations, final release note, archive — instead of letting it silently decay
 argument-hint: [project-name, defaults to current project]
+disable-model-invocation: true
 ---
 
 Wind down the project named in `$ARGUMENTS` (or the current project). This is deliberate end-of-life, not deletion — nothing here removes code or data without explicit per-step confirmation.

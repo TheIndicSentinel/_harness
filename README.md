@@ -31,7 +31,7 @@ Then run `/harness-init` once — a plugin install doesn't auto-load an always-o
 | Memory & context | `/wrap-up` (session learnings → project memory), context-hygiene rules in the umbrella `CLAUDE.md` |
 | Scaffolding | `/new-project`, `/adopt-project`, `/harness-status`, `/sunset-project` |
 
-Every project gets a standard `docs/` set (PRD, MARKETING, ROADMAP, CHANGELOG, OPERATIONS, BUSINESS, COMPLIANCE, CONNECTORS, RELEASE_CHECKLIST, COST_LOG) scaffolded from `templates/new-project/`.
+Every project gets a standard `docs/` set (PRD, MARKETING, ROADMAP, CHANGELOG, OPERATIONS, BUSINESS, COMPLIANCE, CONNECTORS, RELEASE_CHECKLIST) scaffolded from `templates/new-project/`.
 
 ## The release gate (the actual point of this harness)
 
@@ -47,7 +47,7 @@ This local hook is a fast nudge, not a trust boundary — it only sees actions t
 
 ## Token budgets (optional)
 
-`python3 hooks/budget_write.py <project_root> <monthly_token_budget>` sets a best-effort monthly token budget per project, computed from `COST_LOG.md`. `/harness-status` always shows the current live percentage; a SessionStart alert fires once per threshold crossed (50/80/100%) per calendar month, not every session after crossing — it's a nudge, not a spend-prevention mechanism (nothing can stop a session mid-flight, and this doesn't see API/subscription/Claude.ai usage at all). Same caveat as the rest of `COST_LOG.md`: an estimate, not authoritative billing — see [`docs/OTEL.md`](docs/OTEL.md) for the full source ranking. If you'd rather not bother with a budget, say so explicitly: `budget_write.py <project_root> --skip` — `/harness-status` then reports "intentionally skipped" instead of leaving it looking like an oversight.
+`python3 hooks/budget_write.py <project_root> <monthly_token_budget>` sets a best-effort monthly token budget per project, computed from the per-project cost log (`~/.claude/harness/cost/`). `/harness-status` always shows the current live percentage; a SessionStart alert fires once per threshold crossed (50/80/100%) per calendar month, not every session after crossing — it's a nudge, not a spend-prevention mechanism (nothing can stop a session mid-flight, and this doesn't see API/subscription/Claude.ai usage at all). Same caveat as the rest of `COST_LOG.md`: an estimate, not authoritative billing — see [`docs/OTEL.md`](docs/OTEL.md) for the full source ranking. If you'd rather not bother with a budget, say so explicitly: `budget_write.py <project_root> --skip` — `/harness-status` then reports "intentionally skipped" instead of leaving it looking like an oversight.
 
 ## Custom release commands (optional)
 
@@ -66,12 +66,23 @@ The real risk isn't the harness failing — it's installing it and never actuall
 
 Privacy-by-default and guardrails-first aren't features here — they're defaults every skill in this bundle assumes. If that's not the product philosophy you want, this harness will actively push back on decisions that contradict it (see `privacy-guardrails-review`'s explicit "don't record pass to unblock the user faster" rule). That's by design, not a bug to route around.
 
+## Install as a plugin
+`/plugin marketplace add TheIndicSentinel/_harness`, then `/plugin install solo-founder-harness`, then run `/harness-init` once (a plugin install doesn't load the umbrella `CLAUDE.md`).
+
 ## Development
+
+Run the tests in a venv: `python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/pytest -q` (the hooks and scripts need only the standard library; pytest is for development, so a bare `pytest` on a system Python without it fails by design).
 
 Source of truth for this plugin is this repo. The same content also installs via a local symlink setup (see `CLAUDE.md`'s "Where this harness lives") for the original single-machine use case — both paths are kept working; new content should use `"${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}"` in any Bash command so it resolves correctly under either.
 
-**`settings.json` is the original symlink install's config, not something to copy verbatim.** Its `permissions.allow` list has this machine's absolute paths hardcoded (`/Users/.../​_harness/...`) — that's fine for the one machine it's symlinked on, but it isn't portable, and it's deliberately *not* what other developers get: a plugin install uses `hooks/hooks.json` instead (which correctly uses `$CLAUDE_PLUGIN_ROOT`) and normal Claude Code permission prompts, not this file. If you fork the symlink-install approach for your own machine, expect to edit these three paths to match your own username/home directory.
+**`settings.json` is the original symlink install's config.** It is now portable (hook commands use `"${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}"`, allow rules use wildcards), so it can be adopted on another machine as-is. A plugin install doesn't use it: it gets `hooks/hooks.json` plus normal permission prompts. `tests/test_portability.py` fails if an author-specific absolute path creeps back in. Since 0.5.1 `~/.claude/settings.json` is a real file, no longer a symlink to this one: personal preferences (model, theme) stay in your live file and out of the repo. This file is the shared template (hooks + secrets denies); changes here don't propagate by themselves, so diff and merge them into your live settings by hand. `~/.claude/skills` is still a symlink into this repo's `skills/`, so desktop-synced skills (`skills/synced/`, gitignored) and anything you install by hand appear there; exclude those locally with `.git/info/exclude`.
 
 ## License
 
 See `.claude-plugin/plugin.json` — pick and set a real license before treating this as publicly reusable; it currently ships as a placeholder.
+
+## See the live mind tree
+`/harness-atlas` inside Claude Code, or `harness-ui` in a terminal, regenerates `~/.claude/harness-atlas.html` from current data and opens it: projects worked on, tokens per project and per task, gates, docs, memory, hooks and history. `harness-ui` is a one-line wrapper (`python3 scripts/generate_atlas.py --open`); if it is missing, `python3 scripts/generate_atlas.py --open` does the same.
+
+## Reference docs
+`docs/VERIFICATION.md` (making "done" mean checked: prompt, `/goal`, opt-in Stop hook, fresh review) · `docs/CI_GATE_CHECK.md` (CI as the authoritative release gate) · `docs/COMPATIBILITY.md` (what we rely on in Claude Code, drift checks) · `docs/OTEL.md` (token/cost sources ranked by trust) · `docs/DATA_RETENTION.md` · `docs/LIFECYCLE.md`.
