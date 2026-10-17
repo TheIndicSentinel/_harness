@@ -16,6 +16,8 @@ import re
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 
+from gate_lib import existing_cost_log
+
 ALERT_THRESHOLDS = [100, 80, 50]
 
 _ROW_RE = re.compile(
@@ -75,8 +77,8 @@ def tokens_used_this_month(project_root: str) -> Optional[int]:
     """Sum input+output tokens from COST_LOG.md rows dated in the current
     UTC calendar month. None means "no COST_LOG.md yet", distinct from 0
     (a log that exists but has no parseable rows this month)."""
-    log_path = os.path.join(project_root, "docs", "COST_LOG.md")
-    if not os.path.isfile(log_path):
+    log_path = existing_cost_log(project_root)
+    if not log_path:
         return None
     this_month = datetime.now(timezone.utc).strftime("%Y-%m")
     total = 0

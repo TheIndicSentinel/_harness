@@ -8,7 +8,11 @@ On-brand for a privacy-first harness: know what you're keeping. This covers what
 |---|---|---|---|
 | Gate records | `<project>/.harness/gates.json` | Pass/fail status, reviewed commit SHA, timestamp, a one-line review summary — no code, no user data | Kept indefinitely (small, append-by-overwrite JSON); delete the file to reset a project's gate history |
 | Token budget | `<project>/.harness/budget.json` | A monthly token number you set — nothing else | Until you delete it or reset the budget |
-| Session/cost log | `<project>/docs/COST_LOG.md` | Date, an 8-character session ID prefix, duration, best-effort token counts | Grows one row per Claude Code session in that project; trim or archive old rows manually if it gets long |
+| Session/cost log | `~/.claude/harness/cost/<project>.md` (outside the repo; `CLAUDE_HARNESS_DATA_DIR` overrides) | Date, an 8-character session ID prefix, active time, best-effort token counts | Grows one row per Claude Code session; trim or archive old rows manually if it gets long. Older versions wrote `<project>/docs/COST_LOG.md` inside the repo — untrack and delete that copy |
+| Review history (optional) | `~/.claude/harness/reviews/<project>/` (outside the repo) | Long-form privacy/guardrail review history moved out of project memory when a project repo is public | Kept until you delete it; contains finding details, so never copy it into a repo |
+| Context snapshots | `~/.claude/harness/measurements/context-latest.json` and `context-history.jsonl` (outside the repo) | The `/context` report's token counts per category and the harness's share. No file contents. Taken with `claude -p /context`, which makes no model call | Kept until you delete them; refreshed when over 6 hours old |
+| Transcript token cache | `~/.claude/harness/cache/sessions.json` | Per transcript file: project, git branch, day and token counts. No message text. A cache: safe to delete | Rebuilt on the next atlas run |
+| Baseline comparison | `~/.claude/harness/baseline/<project>-compare.json` and the `zz-baseline-*` cost rows | Per-task wall time, tokens, turns and Orient from the measurement pilot | Kept until you delete it |
 | Claude Code session transcripts | `~/.claude/projects/<project-path>/` (native Claude Code storage, not harness-managed) | Full conversation content — prompts, tool calls, file contents touched during the session | Governed by Claude Code itself, not this harness — see Claude Code's own settings/docs for retention controls |
 | Project memory | `~/.claude/projects/<project-path>/memory/*.md` (native Claude Code storage) | Durable facts, feedback, accepted-risk decisions the harness's skills write there (e.g. `privacy-guardrails-review`'s accepted-risk notes) | Persists across sessions by design — this is memory's whole purpose; edit or delete individual `.md` files there directly to remove something |
 
@@ -17,6 +21,6 @@ No copy of your code, no prompt/response content, no user data from any product 
 
 ## Clearing it
 - **A single project's harness state:** delete `<project>/.harness/` — gates and budget both reset. This does not affect Claude Code's own transcripts or memory for that project.
-- **A project's session/cost history:** delete or truncate `<project>/docs/COST_LOG.md`.
+- **A project's session/cost history:** delete or truncate `~/.claude/harness/cost/<project>.md`.
 - **Claude Code transcripts and memory:** these live under `~/.claude/`, outside this harness's control — refer to Claude Code's own documentation for how to clear them.
 - **End of a project's life:** `/sunset-project` handles the deliberate wind-down (final changelog entry, support-status note, roadmap close-out) but does not delete data by itself — that's a separate, explicit choice if you want it.

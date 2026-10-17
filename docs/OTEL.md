@@ -1,8 +1,8 @@
 # Token/cost tracking: four sources, in order of trust (optional, off by default)
 
-`session_log.py` (the SessionEnd hook) gives every project a best-effort, zero-infrastructure token estimate by parsing the session transcript. That's the default and it stays the default — it needs no setup and produces the per-project `docs/COST_LOG.md` rollups `/cost-report` reads. It is **not** authoritative, and neither — despite what an earlier version of this file said — is OpenTelemetry. Anthropic's own documentation describes Claude Code's OTel cost metric as an approximation; the billing provider is the actual authority. Use this ranking:
+`session_log.py` (the SessionEnd hook) gives every project a best-effort, zero-infrastructure token estimate by parsing the session transcript. That's the default and it stays the default — it needs no setup and produces the per-project cost-log rollup (`~/.claude/harness/cost/`)s `/cost-report` reads. It is **not** authoritative, and neither — despite what an earlier version of this file said — is OpenTelemetry. Anthropic's own documentation describes Claude Code's OTel cost metric as an approximation; the billing provider is the actual authority. Use this ranking:
 
-1. **`session_log.py` / `COST_LOG.md` (this harness's default):** a local, client-side, best-effort estimate parsed from the session transcript. Good for trend-spotting and the per-project rollup `/cost-report` reads. Not a dollar figure to trust.
+1. **`session_log.py` / the cost log (this harness's default):** a local, client-side, best-effort estimate parsed from the session transcript. Good for trend-spotting and the per-project rollup `/cost-report` reads. Not a dollar figure to trust.
 2. **OpenTelemetry (`claude_code.token.usage`, `claude_code.cost.usage`):** richer, more structured operational telemetry than the transcript parser — but Anthropic's own docs call the cost metric an *approximation*, not authoritative. Better than (1) for volume/shape of usage; still not the number to reconcile a bill against.
 3. **Anthropic Admin API / Console usage report:** the actual authoritative source for API usage, if you have organization/workspace admin access — billing-system-derived, broken down by workspace, API key, model, and service tier. This harness doesn't integrate with it (no admin/org credentials to build or test against, and this harness governs Claude Code usage only — see the README's scope section) — but if you have that access, trust this over (1) and (2).
 4. **Claude subscription usage (Claude.ai, Claude Code under a Pro/Max/Team plan):** a **separate billing domain**, not a per-request API dollar cost — don't represent subscription usage as if it were metered API spend; they're different products with different accounting. Anthropic's own account/subscription usage views are the source for this, not anything in this file.
@@ -25,7 +25,7 @@ export OTEL_METRICS_EXPORTER=console        # prints metrics to stderr — simpl
 
 ## What OTel does and doesn't replace
 - **Improves on:** the transcript parser's fragility (`session_log.py` depends on an undocumented JSONL shape) and gives richer per-call telemetry.
-- **Does NOT replace:** the per-project `docs/COST_LOG.md` rollup that `/cost-report` reads — OTel metrics aren't natively scoped to "which harness project." Keep `session_log.py` running either way.
+- **Does NOT replace:** the per-project cost-log rollup (`~/.claude/harness/cost/`) that `/cost-report` reads — OTel metrics aren't natively scoped to "which harness project." Keep `session_log.py` running either way.
 - **Does NOT replace:** the Admin API, for an actual dollar figure — see tier 3 above.
 
 ## Reference
