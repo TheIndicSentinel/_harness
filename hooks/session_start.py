@@ -13,6 +13,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from budget_lib import alert_threshold_crossed, budget_status, record_alert, should_alert  # noqa: E402
+from memory_lib import memory_nudge  # noqa: E402
+from settings_lib import settings_drift  # noqa: E402
 from gate_lib import check_passing, load_gates, project_root_for, required_gates  # noqa: E402
 
 MAX_NOW_ITEMS = 3
@@ -57,6 +59,39 @@ def roadmap_now(project_root: str):
     return [i for i in items if i]
 
 
+def collect_lines(project_root: str, record_alerts: bool = True) -> list:
+    """The lines the hook prints into a session's starting context.
+
+    record_alerts=False makes this side-effect free (the budget alert is still
+    reported, but not marked as already shown), so reports can measure what a
+    session would be given without consuming the once-per-month alert."""
+    lines = []
+    gates = gate_summary(project_root)
+    if gates:
+        lines.append(f"[harness] gates — {gates}")
+    now = roadmap_now(project_root)
+    if now:
+        lines.append(f"[harness] roadmap Now — " + " | ".join(now))
+    drift = settings_drift()
+    if drift:
+        lines.append(f"[harness] live ~/.claude/settings.json differs from the harness template ({len(drift)} item(s)); /harness-status lists them")
+    nudge = memory_nudge(project_root)
+    if nudge:
+        lines.append(nudge)
+    status = budget_status(project_root)
+    if status is not None:
+        used, budget, pct = status
+        crossed = alert_threshold_crossed(pct)
+        # Fire once per threshold per month, not every session -- a
+        # SessionStart hook runs unprompted every time, so re-printing
+        # the same crossing indefinitely would be noise, not signal.
+        if crossed is not None and should_alert(project_root, crossed):
+            lines.append(f"[harness] token budget ALERT — {used}/{budget} ({pct}%, crossed {crossed}% threshold)")
+            if record_alerts:
+                record_alert(project_root, crossed)
+    return lines
+
+
 def main() -> int:
     try:
         payload = json.load(sys.stdin)
@@ -64,24 +99,7 @@ def main() -> int:
         project_root = project_root_for(cwd)
         if not project_root or not os.path.isdir(project_root):
             return 0
-
-        lines = []
-        gates = gate_summary(project_root)
-        if gates:
-            lines.append(f"[harness] gates — {gates}")
-        now = roadmap_now(project_root)
-        if now:
-            lines.append(f"[harness] roadmap Now — " + " | ".join(now))
-        status = budget_status(project_root)
-        if status is not None:
-            used, budget, pct = status
-            crossed = alert_threshold_crossed(pct)
-            # Fire once per threshold per month, not every session -- a
-            # SessionStart hook runs unprompted every time, so re-printing
-            # the same crossing indefinitely would be noise, not signal.
-            if crossed is not None and should_alert(project_root, crossed):
-                lines.append(f"[harness] token budget ALERT — {used}/{budget} ({pct}%, crossed {crossed}% threshold)")
-                record_alert(project_root, crossed)
+        lines = collect_lines(project_root)
         if lines:
             print("\n".join(lines))
     except Exception:

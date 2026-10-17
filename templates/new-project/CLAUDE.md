@@ -62,6 +62,6 @@ Module-specific rules (e.g. only relevant under `core/inference/`) belong in `.c
 - Business (pricing, unit economics): [docs/BUSINESS.md](docs/BUSINESS.md)
 - Legal & compliance: [docs/COMPLIANCE.md](docs/COMPLIANCE.md)
 - Connectors/MCP registry: [docs/CONNECTORS.md](docs/CONNECTORS.md)
-- Cost/session log: [docs/COST_LOG.md](docs/COST_LOG.md)
+- Session/cost log: kept outside the repo (`~/.claude/harness/cost/<project>.md`) so it can't be published by accident
 
 Scaffolded {{DATE}} by `/new-project`.
