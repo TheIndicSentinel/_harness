@@ -12,6 +12,15 @@ name: Harness Release Gate Check
 
 on:
   workflow_call:
+    inputs:
+      enforce:
+        description: >-
+          Set false for runs that are not a real release (e.g. a pull-request
+          dry run) so the job succeeds without checking and downstream `needs:`
+          still resolve. Typical caller value: the expression
+          startsWith(github.ref, 'refs/tags/') passed through `with:`.
+        type: boolean
+        default: true
 
 jobs:
   gate-check:
@@ -20,9 +29,16 @@ jobs:
       # Pinned to commit SHA, not a floating tag (a tag can be moved; a SHA
       # can't). Verified via `gh api repos/actions/checkout/git/refs/tags/v4.3.1`
       # -- update by re-running that for a newer tag, don't hand-edit the SHA.
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - if: ${{ inputs.enforce }}
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          fetch-depth: 2 # need HEAD~1 for the "bookkeeping commit" case
+          fetch-depth: 0 # full history + tags: parent, merge-base and last-tag baselines
+          fetch-tags: true
 
       - name: Verify required harness gates pass for this commit
+        if: ${{ inputs.enforce }}
         run: python3 .github/workflows/harness_gate_check.py
+
+      - name: Not a release ref, gate check skipped
+        if: ${{ !inputs.enforce }}
+        run: echo "enforce=false for this run (not a release ref); gates not checked."

@@ -45,6 +45,33 @@ def projects_root() -> str:
     )
 
 
+def data_dir() -> str:
+    """Harness-owned per-user data (cost logs). Lives under ~/.claude, OUTSIDE
+    any project repo, so it can't be committed or published by accident.
+    Override via CLAUDE_HARNESS_DATA_DIR."""
+    return os.path.abspath(
+        os.path.expanduser(os.environ.get("CLAUDE_HARNESS_DATA_DIR") or "~/.claude/harness")
+    )
+
+
+def cost_log_path(project_root: str) -> str:
+    return os.path.join(data_dir(), "cost", os.path.basename(project_root) + ".md")
+
+
+def legacy_cost_log_path(project_root: str) -> str:
+    """Pre-0.4 location, inside the repo (a leak risk -- see CHANGELOG)."""
+    return os.path.join(project_root, "docs", "COST_LOG.md")
+
+
+def existing_cost_log(project_root: str) -> Optional[str]:
+    """Readers use this: the new location if present, else a legacy in-repo
+    log so history isn't lost until it's migrated, else None."""
+    for path in (cost_log_path(project_root), legacy_cost_log_path(project_root)):
+        if os.path.isfile(path):
+            return path
+    return None
+
+
 def project_root_for(cwd: str) -> Optional[str]:
     """Shared cwd -> project-root resolver used by every hook and script.
     Returns None if cwd isn't under projects_root(), or is the harness itself.

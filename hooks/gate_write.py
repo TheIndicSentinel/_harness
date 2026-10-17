@@ -20,6 +20,8 @@ import sys
 
 from gate_lib import record_gate, set_release_commands, set_required_gates
 
+NOTES_ADVISORY_CHARS = 160
+
 
 def main() -> int:
     if len(sys.argv) >= 4 and sys.argv[2] == "--require":
@@ -53,6 +55,14 @@ def main() -> int:
         return 1
 
     print(f"Recorded {check}={status} for {project_root}")
+    if len(notes) > NOTES_ADVISORY_CHARS:
+        print(
+            f"note: the summary is {len(notes)} chars. gates.json is committed for the CI gate "
+            f"check, possibly to a public repo: keep it to verdict + scope + counts "
+            f"(no vulnerability details, accepted-risk specifics or secrets; those belong in "
+            f"local project memory).",
+            file=sys.stderr,
+        )
     return 0
 
 

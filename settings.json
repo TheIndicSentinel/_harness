@@ -7,8 +7,8 @@
       "Bash(git show:*)",
       "Bash(git tag:*)",
       "Bash(ls:*)",
-      "Bash(python3 /Users/bytenomad/Documents/Projects/_harness/scripts/harness_status.py:*)",
-      "Bash(python3 /Users/bytenomad/Documents/Projects/_harness/hooks/gate_write.py:*)"
+      "Bash(python3 *scripts/harness_status.py*)",
+      "Bash(python3 *hooks/gate_write.py*)"
     ],
     "deny": [
       "Read(**/*.pem)",
@@ -18,7 +18,15 @@
       "Read(**/credentials.json)",
       "Read(**/service-account*.json)",
       "Read(**/.env)",
-      "Read(**/.env.*)"
+      "Read(**/.env.*)",
+      "Edit(**/*.pem)",
+      "Edit(**/id_rsa*)",
+      "Edit(**/*_rsa)",
+      "Edit(**/*.p12)",
+      "Edit(**/credentials.json)",
+      "Edit(**/service-account*.json)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)"
     ]
   },
   "hooks": {
@@ -27,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/session_start.py",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}/hooks/session_start.py\"",
             "timeout": 10
           }
         ]
@@ -39,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/secrets_guard.py",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}/hooks/secrets_guard.py\"",
             "timeout": 10
           }
         ]
@@ -49,8 +57,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/release_gate.py",
-            "timeout": 10
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}/hooks/release_gate.py\"",
+            "timeout": 10,
+            "onFailure": "block"
           }
         ]
       }
@@ -60,8 +69,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /Users/bytenomad/Documents/Projects/_harness/hooks/session_log.py",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}/hooks/session_log.py\"",
             "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness}/hooks/verify_before_stop.py\"",
+            "timeout": 900
           }
         ]
       }

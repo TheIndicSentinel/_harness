@@ -164,3 +164,44 @@ class TestReleaseGateHookEndToEnd:
             env,
         )
         assert code == 0  # now passes once the gate is recorded
+
+
+class TestFailClosed:
+    def test_unexpected_gate_error_blocks_a_ship_action(self, git_repo, monkeypatch, capsys):
+        """A crash while evaluating gates must block (exit 2), not fall through
+        as a non-blocking traceback (exit 1)."""
+        def boom(_root):
+            raise RuntimeError("simulated gate_lib bug")
+
+        monkeypatch.setattr(release_gate, "failing_required", boom)
+        monkeypatch.setattr(
+            sys, "stdin",
+            __import__("io").StringIO(json.dumps(
+                {"cwd": str(git_repo), "tool_name": "Bash", "tool_input": {"command": "npm publish"}}
+            )),
+        )
+        assert release_gate.main() == 2
+        assert "failing closed" in capsys.readouterr().err.lower()
+
+    def test_broken_release_commands_does_not_disable_builtin_patterns(self, git_repo, monkeypatch):
+        def boom(_root):
+            raise ValueError("bad gates.json")
+
+        monkeypatch.setattr(release_gate, "release_commands", boom)
+        monkeypatch.setattr(
+            sys, "stdin",
+            __import__("io").StringIO(json.dumps(
+                {"cwd": str(git_repo), "tool_name": "Bash", "tool_input": {"command": "npm publish"}}
+            )),
+        )
+        assert release_gate.main() == 2  # still recognized, still gated (no gate recorded)
+
+    def test_corrupt_gates_json_blocks(self, git_repo):
+        (git_repo / ".harness").mkdir()
+        (git_repo / ".harness" / "gates.json").write_text("{not json")
+        env = {**os.environ, "CLAUDE_HARNESS_PROJECTS_ROOT": str(git_repo.parent)}
+        code, _ = run_hook(
+            {"cwd": str(git_repo), "tool_name": "Bash", "tool_input": {"command": "npm publish"}},
+            env,
+        )
+        assert code == 2

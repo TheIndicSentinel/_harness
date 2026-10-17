@@ -33,7 +33,74 @@ def record_valid_for_head(entry: dict, head: str, parent: str, repo_dir: str) ->
     return False
 
 
-def check(gates_path: str, head: str, parent: str, repo_dir: str = "."):
+def required_in(gates: dict) -> set:
+    names = {"privacy_guardrails_review"}
+    extra = gates.get("required_gates") if isinstance(gates, dict) else None
+    if isinstance(extra, list):
+        names |= {g for g in extra if isinstance(g, str)}
+    return names
+
+
+def gates_at(ref: str, repo_dir: str):
+    """Parsed gates.json as of `ref`, or None when absent/invalid there."""
+    raw = sh(repo_dir, "show", f"{ref}:{GATES_PATH}")
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def baseline_refs(head: str, parent, repo_dir: str) -> list:
+    """Commits whose required-gate set the current record must not loosen.
+    Comparing only against the parent is defeated by a two-commit PR (commit 1
+    drops the gate, commit 2 ships), so also compare against:
+      - the merge-base with the PR's target branch (GITHUB_BASE_REF), else the
+        remote default branch, and
+      - the most recent tag before HEAD (what was last released).
+    Refs that can't be resolved (shallow clone, no tags) are skipped."""
+    refs = []
+    if parent:
+        refs.append(parent)
+    base = os.environ.get("GITHUB_BASE_REF") or ""
+    for cand in ([f"origin/{base}"] if base else []) + ["origin/HEAD", "origin/main", "origin/master"]:
+        mb = sh(repo_dir, "merge-base", head, cand)
+        if mb and mb != head:
+            refs.append(mb)
+            break
+    tag = sh(repo_dir, "describe", "--tags", "--abbrev=0", f"{head}~1")
+    if tag:
+        tag_commit = sh(repo_dir, "rev-list", "-n", "1", tag)
+        if tag_commit and tag_commit != head:
+            refs.append(tag_commit)
+    seen, out = set(), []
+    for r in refs:
+        if r not in seen:
+            seen.add(r)
+            out.append(r)
+    return out
+
+
+def removed_required_gates(gates: dict, refs, repo_dir: str) -> list:
+    """Gates required at any baseline ref but not required now, minus those the
+    current record explicitly acknowledges in `acknowledged_gate_removals`.
+    The acknowledgement is deliberate, visible friction in review, not a
+    security boundary: the record is still self-attested inside the repo."""
+    if isinstance(refs, str):
+        refs = [refs]
+    before = set()
+    for ref in refs or []:
+        prior = gates_at(ref, repo_dir)
+        if prior is not None:
+            before |= required_in(prior)
+    acked = gates.get("acknowledged_gate_removals")
+    acked = {g for g in acked if isinstance(g, str)} if isinstance(acked, list) else set()
+    return sorted(before - required_in(gates) - acked)
+
+
+def check(gates_path: str, head: str, parent: str, repo_dir: str = ".", baselines=None):
     """Returns (ok: bool, failures: list[str])."""
     if not os.path.isfile(gates_path):
         return False, [
@@ -59,6 +126,16 @@ def check(gates_path: str, head: str, parent: str, repo_dir: str = "."):
         required += [g for g in extra if g not in required]
 
     failures = []
+    refs = baselines if baselines is not None else baseline_refs(head, parent, repo_dir)
+    removed = removed_required_gates(gates, refs, repo_dir)
+    if removed:
+        failures.append(
+            "required gate(s) removed since the previous commit, last tag or target branch: "
+            + ", ".join(removed)
+            + " — to loosen the gate set on purpose, list them in "
+            '"acknowledged_gate_removals" in a change that gets its own review '
+            "(CODEOWNERS for .harness/), not alongside a release"
+        )
     for name in required:
         entry = gates.get(name)
         if not isinstance(entry, dict):

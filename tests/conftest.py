@@ -12,6 +12,14 @@ sys.path.insert(
 )
 
 
+@pytest.fixture(autouse=True)
+def _isolated_data_dir(tmp_path, monkeypatch):
+    """Never let a test write cost logs into the real ~/.claude/harness."""
+    monkeypatch.setenv("CLAUDE_HARNESS_DATA_DIR", str(tmp_path / "_harness_data"))
+    # ...nor the real Claude Code home (transcripts, memory): a test that needs data builds its own.
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "_claude_home"))
+
+
 @pytest.fixture
 def git_repo(tmp_path, monkeypatch):
     """A fresh git repo at <tmp_path>/proj, with CLAUDE_HARNESS_PROJECTS_ROOT

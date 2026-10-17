@@ -15,6 +15,11 @@ So the CI check (`harness_gate_check.py`) accepts exactly one shape as valid: `r
 3. Commit `.harness/gates.json` by itself: `git add .harness/gates.json && git commit -m "Record gate pass for <sha>"`.
 4. Tag/release from **this** commit, not the code commit before it.
 
+## What else the CI check enforces
+- **Gates can't be quietly removed.** If a gate that was required in the parent commit's `.harness/gates.json` is missing from this commit's, the check fails, even with a valid pass for the rest. Loosening the gate set must be its own reviewed change (CODEOWNERS on `.harness/`), not an edit riding along with a release. This makes the umbrella rule "never remove a gate to unblock a ship" mechanical.
+- **The record must be committable.** `/harness-status` flags a project whose `.gitignore` excludes `.harness/`: CI can never see a gate record there, so the check could only fail. Remove the ignore rule (gates.json is metadata only: status, commit SHA, timestamp, one-line summary).
+- Projects keep their own copy of `harness_gate_check.py`; re-copy it from the template after harness updates (the removal check above is new in 0.5.0).
+
 ## Wiring it into an existing release workflow
 Add a `needs:` dependency so the release job won't run until the gate check passes:
 

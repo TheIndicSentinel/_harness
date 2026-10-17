@@ -20,9 +20,14 @@ Coverage and known boundaries (documented deliberately):
   string, or a manual terminal outside Claude Code bypasses it. The honest
   reviews it points to are the real control; this hook makes skipping them a
   deliberate act instead of an accident.
-- Fail-mode: infrastructure errors (unreadable payload) fail OPEN so a hook bug
-  can't brick every Bash call; the gate check itself fails CLOSED (missing or
-  stale record blocks).
+- Fail-mode: an unreadable payload fails OPEN so a hook bug can't brick every
+  Bash call (we can't tell whether it was a ship action). Once a command IS
+  recognized as a ship action, everything fails CLOSED: a missing or stale
+  record blocks, and so does any unexpected error while evaluating the gates
+  (a bare traceback exits 1, which Claude Code treats as non-blocking -- so
+  the evaluation is wrapped and converted to exit 2). A hook TIMEOUT also
+  falls through to the normal permission flow; Claude Code's `onFailure:
+  "block"` hook option (v2.1.295+) closes that, once it's safe to require.
 - Dirty working tree: a passing gate only vouches for the reviewed commit's
   COMMITTED content. HEAD matching the gate record says nothing about
   uncommitted local edits sitting in the working tree -- and a release
@@ -99,11 +104,25 @@ def main() -> int:
     if not project_root or not os.path.isdir(project_root):
         return 0
 
-    matched = is_ship_action(payload, release_commands(project_root))
+    try:
+        declared = release_commands(project_root)
+    except Exception:  # a bad gates.json must not disable the built-in patterns
+        declared = ()
+    matched = is_ship_action(payload, declared)
     if not matched:
         return 0
 
-    failing = failing_required(project_root)
+    try:
+        failing = failing_required(project_root)
+        dirty = None if failing else is_working_tree_dirty(project_root)
+    except Exception as exc:  # fail CLOSED once we know this is a ship action
+        print(
+            f"Blocked by harness release gate: this looks like a release/publish/deploy "
+            f"action ({matched}), but the gate check itself failed ({type(exc).__name__}). "
+            f"Failing closed -- fix the harness error, then retry.",
+            file=sys.stderr,
+        )
+        return 2
     if failing:
         skill_hint = {
             "privacy_guardrails_review": "privacy-guardrails-review",
@@ -120,7 +139,7 @@ def main() -> int:
         )
         return 2
 
-    if is_working_tree_dirty(project_root):
+    if dirty:
         print(
             f"Blocked by harness release gate: this looks like a release/publish/deploy "
             f"action ({matched}), and required gates pass for the current commit, but "

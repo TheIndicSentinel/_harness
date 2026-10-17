@@ -1,0 +1,3 @@
+# Test-only dependencies. The hooks and scripts themselves are stdlib-only.
+# CI pins the same range (see .github/workflows/test.yml).
+pytest>=8.0,<9.0

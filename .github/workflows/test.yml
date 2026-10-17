@@ -12,7 +12,12 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # macOS too: the harness is developed on a Mac, and git/path behavior differs
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       # Pinned to commit SHA, not a floating tag (a tag can be moved; a SHA
       # can't). Verified via `gh api repos/actions/checkout/git/refs/tags/v4.3.1`
@@ -30,7 +35,26 @@ jobs:
           git config --global user.name "harness-ci"
 
       - name: Install test dependencies
-        run: pip install 'pytest>=8.0,<9.0'
+        run: pip install -r requirements-dev.txt
 
       - name: Run tests
         run: pytest -v
+
+  plugin-validate:
+    # Informational: validates the plugin/marketplace manifests with a pinned
+    # Claude Code release. continue-on-error so a CLI change or npm outage
+    # doesn't turn the commit red; look at it when updating Claude Code
+    # (docs/COMPATIBILITY.md).
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install pinned Claude Code
+        run: npm install -g @anthropic-ai/claude-code@2.1.300
+      - name: Validate marketplace manifest
+        run: claude plugin validate .
+      - name: Validate plugin manifest and hooks
+        run: claude plugin validate .claude-plugin/plugin.json

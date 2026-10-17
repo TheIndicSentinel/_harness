@@ -157,3 +157,15 @@ class TestWorkingTreeDirty:
         not_a_repo = tmp_path / "not_a_repo"
         not_a_repo.mkdir()
         assert gate_lib.is_working_tree_dirty(str(not_a_repo)) is True
+
+
+def test_gate_write_warns_on_long_notes(git_repo):
+    import subprocess, sys, os
+    script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "hooks", "gate_write.py")
+    env = {**os.environ, "CLAUDE_HARNESS_PROJECTS_ROOT": str(git_repo.parent)}
+    short = subprocess.run([sys.executable, script, str(git_repo), "privacy_guardrails_review", "pass", "PASS, no blockers"],
+                           capture_output=True, text=True, env=env)
+    long = subprocess.run([sys.executable, script, str(git_repo), "privacy_guardrails_review", "pass", "x" * 300],
+                          capture_output=True, text=True, env=env)
+    assert short.returncode == 0 and short.stderr == ""
+    assert long.returncode == 0 and "possibly to a public repo" in long.stderr
