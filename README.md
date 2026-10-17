@@ -13,7 +13,7 @@ Then run `/harness-init` once. A plugin install doesn't load an always-on `CLAUD
 
 ## Status and evidence
 
-- **Tested:** release gating (`release_gate.py`, the gate records, the CI gate script) and secrets control (`secrets_guard.py`, the deny template) have unit tests, and CI runs them on Linux and macOS (247 tests).
+- **Tested:** release gating (`release_gate.py`, the gate records, the CI gate script) and secrets control (`secrets_guard.py`, the deny template) have unit tests, and the test suite runs on every push, on Linux and macOS.
 - **Not demonstrated:** that the memory and handoff files make sessions cheaper or faster. The one baseline pilot (five tasks, one run per cell) was within noise. A follow-up with 27 prompts suggests a committed `CLAUDE.md` changes answers about project-specific rules, while memory detail files are read only selectively; with three runs per cell, treat that as a lead. Details and caveats: [`docs/MEASUREMENT.md`](docs/MEASUREMENT.md).
 - **Untested:** the GitHub Actions gate check has not yet run on a real release tag. The local hook is a fast nudge, not a trust boundary, and gate records are self-attested.
 
