@@ -84,4 +84,4 @@ New content should use `"${CLAUDE_PLUGIN_ROOT:-$HOME/Documents/Projects/_harness
 
 ## License
 
-Not set yet. `.claude-plugin/plugin.json` carries a placeholder; choose a license before treating this as reusable.
+MIT, see [`LICENSE`](LICENSE).

@@ -3,6 +3,11 @@
 Keep-a-Changelog style. Versions follow `.claude-plugin/plugin.json`.
 
 ## [Unreleased]
+
+## [0.6.0] — 2026-10-17
+### Repository
+- **MIT `LICENSE`** (`plugin.json` `license` is now `MIT`), `SECURITY.md` (private vulnerability reporting is off, so it uses an issue-based fallback), `docs/LOCAL_INSTALL.md` (the symlink and desktop-sync notes moved out of the README), and a README "Status and evidence" section: release gating and secrets control are tested; memory and handoff benefit is not demonstrated; the GitHub Actions gate check has not run on a real release tag.
+- `docs/MEASUREMENT.md`: git worktrees load the main repository's live auto-memory, so earlier worktree-based comparisons were not controlled for memory; how to control it per run.
 ### Removed
 - **The hand-written narrative map** (`harness-map.html`, 109 KB) **and `/harness-map`**, at the owner's explicit request. Its page engine (the part that renders any tree) was first extracted into `scripts/atlas_engine.html` (the atlas title and subtitle baked in, the three generated regions turned into placeholders, nothing else changed); the roughly 67 KB of hand-authored narrative cards (July snapshot, refreshed in 0.5.4) is gone from the tree and recoverable from git history at commit `908927c`. The generated page is byte-identical apart from timestamps, live counts and one provenance sentence that named the deleted map.
 ### Changed
