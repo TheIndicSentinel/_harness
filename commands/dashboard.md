@@ -1,5 +1,6 @@
 ---
 description: Generate a live, always-accurate HTML dashboard of every project under the harness's projects root, and open it locally
+disable-model-invocation: true
 ---
 
 Run this from any directory — it works the same whether you're inside a project or at the harness root:

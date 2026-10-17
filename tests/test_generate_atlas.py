@@ -3,6 +3,8 @@ import os
 import re
 import subprocess
 
+import pytest
+
 import generate_atlas as ga
 from generate_dashboard import list_project_names
 
@@ -62,14 +64,45 @@ def test_harness_meta_always_present(git_repo, tmp_path):
 
 
 def test_engine_is_extracted_not_duplicated(git_repo, tmp_path):
-    """The shell/engine must come from harness-map.html at runtime, not be
-    hand-copied into this script -- this test would fail if someone pastes a
-    static copy of the engine into generate_atlas.py instead of extracting it."""
+    """The page engine lives in scripts/atlas_engine.html, not pasted into this
+    script: the generated page must contain it exactly once."""
     out = tmp_path / "atlas.html"
     ga.generate(output_path=str(out), focus_cwd=str(git_repo))
     content = out.read_text()
     assert content.count("function navigateTo") == 1
     assert content.count("<script>") == 1
+
+
+def test_engine_template_exists_and_has_each_placeholder_once():
+    """Fails if scripts/atlas_engine.html is deleted or loses a placeholder."""
+    assert os.path.isfile(ga.ENGINE_SOURCE), "scripts/atlas_engine.html is missing"
+    text = open(ga.ENGINE_SOURCE, encoding="utf-8").read()
+    for placeholder in ga.ENGINE_PLACEHOLDERS:
+        assert text.count(placeholder) == 1, placeholder
+    assert "function navigateTo" in text and "function render" in text
+
+
+def test_generate_fails_loudly_when_the_engine_is_missing(git_repo, tmp_path, monkeypatch):
+    monkeypatch.setattr(ga, "ENGINE_SOURCE", str(tmp_path / "no-such-engine.html"))
+    out = tmp_path / "atlas.html"
+    with pytest.raises(RuntimeError, match="Atlas engine template not found"):
+        ga.generate(output_path=str(out), focus_cwd=str(git_repo))
+    assert not out.exists()          # no half-written page that looks like an empty harness
+
+
+def test_generate_fails_when_a_placeholder_is_lost(git_repo, tmp_path, monkeypatch):
+    broken = tmp_path / "engine.html"
+    broken.write_text(open(ga.ENGINE_SOURCE, encoding="utf-8").read().replace("@@FLEET_PILLS@@", ""), encoding="utf-8")
+    monkeypatch.setattr(ga, "ENGINE_SOURCE", str(broken))
+    with pytest.raises(RuntimeError, match="@@FLEET_PILLS@@"):
+        ga.generate(output_path=str(tmp_path / "atlas.html"), focus_cwd=str(git_repo))
+
+
+def test_engine_does_not_depend_on_the_removed_hand_written_map():
+    text = open(ga.ENGINE_SOURCE, encoding="utf-8").read()
+    assert "harness-map" not in text
+    assert not os.path.exists(os.path.join(ga.HARNESS_ROOT, "harness-map.html"))
+    assert not os.path.exists(os.path.join(ga.HARNESS_ROOT, "commands", "harness-map.md"))
 
 
 def _make_repo(path, commit_message):
@@ -86,9 +119,9 @@ def test_two_projects_do_not_leak_commits_into_each_other(tmp_path, monkeypatch)
     """Regression test for a real bug: every project used the same bare
     category id ("commits", "memory", etc.), so LEAVES/DETAIL -- which are
     flat objects shared across all projects once merged -- had the later
-    project's data silently overwrite the earlier one's. kavach showed
-    saarthi's commits because both used the literal id "commits" and
-    saarthi sorts after kavach alphabetically."""
+    project's data silently overwrite the earlier one's. the first
+    project showed the second's commits because both used the literal id
+    "commits" and the second sorts later alphabetically."""
     monkeypatch.setenv("CLAUDE_HARNESS_PROJECTS_ROOT", str(tmp_path))
     _make_repo(tmp_path / "alpha", "UNIQUE_ALPHA_COMMIT_MARKER")
     _make_repo(tmp_path / "zeta", "UNIQUE_ZETA_COMMIT_MARKER")
