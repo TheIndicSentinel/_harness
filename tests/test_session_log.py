@@ -74,7 +74,8 @@ class TestHook:
         assert not (proj / "docs" / "COST_LOG.md").exists()  # nothing written into the repo
         rows = [l for l in log.splitlines() if l.startswith("| 20")]
         assert len(rows) == 1
-        assert "| abcdef12 |" in rows[0] and "| 100/100 |" in rows[0] and "9999" not in rows[0]
+        assert "| abcdef12 |" in rows[0] and "| 100/100 | 9999 |" in rows[0]    # cache read has its own column
+        assert log.count("| Date |") == 1 and "| Cache read | Branch | Orient |" in log
         # Cache reads stay out of the budget total.
         assert budget_lib.tokens_used_this_month(str(proj)) == 200
 
@@ -221,3 +222,37 @@ class TestShellReadOrientation:
         assert not session_log.is_shell_read("sed --in-place s/a/b/ f")
         assert not session_log.is_shell_read("grep x f > out.txt")
         assert not session_log.is_shell_read("")
+
+
+class TestColumnSet:
+    def _run(self, tmp_path, proj, transcript, sid="abcdef123456"):
+        env = {**os.environ, "CLAUDE_HARNESS_PROJECTS_ROOT": str(tmp_path)}
+        payload = {"cwd": str(proj), "session_id": sid, "transcript_path": str(transcript)}
+        return subprocess.run([sys.executable, HOOK_PATH], input=json.dumps(payload), capture_output=True, text=True, env=env)
+
+    def test_hook_migrates_an_old_log_before_appending_and_keeps_every_value(self, tmp_path):
+        proj = tmp_path / "proj"
+        proj.mkdir()
+        log = tmp_path / "_harness_data" / "cost" / "proj.md"
+        log.parent.mkdir(parents=True)
+        log.write_text(
+            "# proj - Session / Cost Log\n\nintro\n\n"
+            "| Date | Session ID | Duration | Est. tokens (in/out) | Cache read |\n|--|--|--|--|--|\n"
+            "| 2026-09-30 | bd6b4656 | 431m55s | 61711/2118 | 273715 |\n"
+            "| 2026-10-02 | 4fc63604 | n/a | n/a | n/a |\n"
+            "| 2026-10-14 | eb29e2a7 | 10m00s | 5/5 | feat/x | 4 |\n")
+        t = tmp_path / "t.jsonl"
+        write_transcript(t, [assistant("m1", "2026-09-29T10:00:00Z", 5, 100)])
+        assert self._run(tmp_path, proj, t).returncode == 0
+        text = log.read_text()
+        assert text.count("| Date |") == 1 and "| Session ID | Active time | Est. tokens (in/out) | Cache read | Branch | Orient |" in text
+        rows = [l for l in text.splitlines() if l.startswith("| 20")]
+        assert all(len(l.strip().strip("|").split("|")) == 7 for l in rows) and len(rows) == 4
+        assert "| 2026-09-30 | bd6b4656 | 431m55s wall | 61711/2118 | 273715 | - | - |" in rows
+        assert "| 2026-10-02 | 4fc63604 | n/a | n/a | n/a | - | - |" in rows
+        assert "| 2026-10-14 | eb29e2a7 | 10m00s | 5/5 | - | feat/x | 4 |" in rows
+        backups = list((log.parent / ".pre-migration").iterdir())
+        assert len(backups) == 1 and "431m55s | 61711/2118 | 273715 |" in backups[0].read_text()
+        # a second run does not migrate again
+        assert self._run(tmp_path, proj, t, sid="zzzzzz999999").returncode == 0
+        assert len(list((log.parent / ".pre-migration").iterdir())) == 1

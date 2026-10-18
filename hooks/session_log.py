@@ -19,9 +19,9 @@ Token accounting (from the transcript's per-message `usage` blocks):
   alone is only the small uncached tail, so ignoring cache writes badly
   undercounts.
 - "out" = output_tokens.
-- cache reads (cache_read_input_tokens) are summed by summarize_transcript but
-  NOT written to the log: they re-count the whole context every turn, so
-  the figure (billions after a long session) is large and says little.
+- cache reads (cache_read_input_tokens) are written to their own "Cache read"
+  column but never added into the token total: they re-count the whole context every
+  turn, so the figure (billions after a long session) says little about cost.
 - Usage is counted once per API message id: the transcript can write one
   line per content block of the same assistant message, each repeating that
   message's usage.
@@ -44,9 +44,7 @@ from typing import Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gate_lib import cost_log_path, legacy_cost_log_path, project_root_for  # noqa: E402
-
-TABLE_HEADER = "| Date | Session ID | Active time | Est. tokens (in/out) | Branch | Orient |"
-TABLE_SEP = "|------|-----------|-------------|------------------------|--------|--------|"
+from cost_log_lib import HEADER as TABLE_HEADER, SEP as TABLE_SEP, ensure_canonical  # noqa: E402
 
 # Gaps longer than this between transcript entries are treated as idle (a
 # resumed session can span days; wall-clock first->last made "18854m44s").
@@ -217,7 +215,7 @@ def main() -> int:
         return 0
 
     session_id = payload.get("session_id", "unknown")[:8]
-    duration, tokens, _cache_read = summarize_transcript(payload.get("transcript_path", ""))
+    duration, tokens, cache_read = summarize_transcript(payload.get("transcript_path", ""))
     date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     log_path = cost_log_path(project_root)
@@ -235,14 +233,17 @@ def main() -> int:
                     "Stored outside the repo on purpose. Active time excludes gaps over "
                     f"{IDLE_GAP_SECONDS // 60} minutes. Token counts are a best-effort estimate, "
                     "not an authoritative dollar figure — cross-check `/cost`. \"in\" includes "
-                    "cache writes; cache reads are not logged (they re-count the whole "
-                    "context every turn and say little about cost).\n\n"
+                    "cache writes; cache reads have their own column and are not part of the "
+                    "total (they re-count the whole context every turn). A session that ends "
+                    "more than once has several rows, each cumulative: use the latest per "
+                    "session ID.\n\n"
                     f"{TABLE_HEADER}\n{TABLE_SEP}\n"
                 )
 
+    ensure_canonical(log_path)  # an older header or row shape is migrated, losslessly, before appending
     with open(log_path, "a") as f:
         f.write(
-            f"| {date} | {session_id} | {duration} | {tokens} | "
+            f"| {date} | {session_id} | {duration} | {tokens} | {cache_read} | "
             f"{current_branch(project_root)} | {orientation_calls(payload.get('transcript_path', ''))} |\n"
         )
 

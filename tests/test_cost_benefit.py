@@ -310,3 +310,14 @@ class TestPanelInThePage:
         assert calls == [1] and cs.load_latest()["total_tokens"] == 1000
         self._page(git_repo, tmp_path, refresh_context=True)                     # now fresh: no second capture
         assert calls == [1]
+
+
+def test_orient_trend_uses_the_latest_row_per_session():
+    d = os.path.join(data_dir(), "cost"); os.makedirs(d, exist_ok=True)
+    open(os.path.join(d, "gamma.md"), "w").write(
+        "| Date | Session ID | Active time | Est. tokens (in/out) | Cache read | Branch | Orient |\n|--|--|--|--|--|--|--|\n"
+        "| 2026-10-10 | aaaa1111 | 2m | 10/10 | - | feat/x | 3 |\n"
+        "| 2026-10-11 | aaaa1111 | 4m | 20/20 | - | feat/x | 3 |\n"     # same session again: one data point, not two
+        "| 2026-10-12 | bbbb2222 | 3m | 10/10 | - | main | 5 |\n")
+    rows = [r for r in cb.real_orient_rows() if r["project"] == "gamma"]
+    assert [(r["date"], r["orient"]) for r in rows] == [("2026-10-11", 3), ("2026-10-12", 5)]

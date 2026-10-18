@@ -16,13 +16,10 @@ import re
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 
+from cost_log_lib import latest_per_session, read_rows
 from gate_lib import existing_cost_log
 
 ALERT_THRESHOLDS = [100, 80, 50]
-
-_ROW_RE = re.compile(
-    r"^\|\s*(\d{4}-\d{2}-\d{2})\s*\|[^|]*\|[^|]*\|\s*(\d+)\s*/\s*(\d+)\s*\|"
-)
 
 
 def budget_path(project_root: str) -> str:
@@ -74,22 +71,18 @@ def is_budget_skipped(project_root: str) -> bool:
 
 
 def tokens_used_this_month(project_root: str) -> Optional[int]:
-    """Sum input+output tokens from COST_LOG.md rows dated in the current
-    UTC calendar month. None means "no COST_LOG.md yet", distinct from 0
-    (a log that exists but has no parseable rows this month)."""
+    """Sum input+output tokens over the latest row of each session, counting a session in
+    the month its latest row is dated (rows are cumulative per session, so earlier rows of the
+    same session are ignored). None means "no cost log yet", distinct from 0 (a log that
+    exists but has no parseable rows this month)."""
     log_path = existing_cost_log(project_root)
     if not log_path:
         return None
     this_month = datetime.now(timezone.utc).strftime("%Y-%m")
     total = 0
-    with open(log_path) as f:
-        for line in f:
-            m = _ROW_RE.match(line.strip())
-            if not m:
-                continue
-            date, in_tok, out_tok = m.groups()
-            if date.startswith(this_month):
-                total += int(in_tok) + int(out_tok)
+    for row in latest_per_session(read_rows(log_path)):
+        if row["in"] is not None and row["date"].startswith(this_month):
+            total += row["in"] + row["out"]
     return total
 
 

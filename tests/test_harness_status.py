@@ -221,3 +221,14 @@ def test_gitignored_gate_record_is_flagged_only_with_ci_gate(git_repo):
     assert "Gate record committable (CI can see it)" in labels
     (git_repo / ".gitignore").write_text("")
     assert harness_status.gate_record_committable(str(git_repo)) is True
+
+
+def test_session_count_is_per_session_not_per_row(git_repo):
+    import gate_lib
+    path = gate_lib.cost_log_path(str(git_repo))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        f.write("| Date | Session ID | Active time | Est. tokens (in/out) | Cache read | Branch | Orient |\n|--|--|--|--|--|--|--|\n"
+                "| 2026-10-10 | aaaa1111 | 2m | 10/10 | - | - | - |\n| 2026-10-11 | aaaa1111 | 4m | 20/20 | - | - | - |\n"
+                "| 2026-10-12 | bbbb2222 | 3m | 10/10 | - | - | - |\n")
+    assert hs.session_count(str(git_repo)) == 2

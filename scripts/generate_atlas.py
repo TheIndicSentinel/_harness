@@ -59,6 +59,7 @@ from harness_status import (  # noqa: E402
 from generate_dashboard import list_project_names, recent_commits, harness_capability_counts  # noqa: E402
 from memory_lib import claude_home, memory_dir  # noqa: E402
 import context_snapshot  # noqa: E402
+import cost_log_lib  # noqa: E402
 import cost_benefit  # noqa: E402
 import session_data  # noqa: E402
 
@@ -246,18 +247,12 @@ def baseline_rows(project):
         m = _BASELINE_FILE.match(os.path.basename(path))
         if not m or m.group("proj") != project:
             continue
-        rows = [l for l in open(path).read().splitlines() if l.startswith("| 20")]
-        if not rows:
+        rows = cost_log_lib.read_rows(path)
+        if not rows or rows[-1]["in"] is None:
             continue
-        cells = [c.strip() for c in rows[-1].strip("|").split("|")]
-        if len(cells) < 4:
-            continue
-        try:
-            tin, tout = (int(x) for x in cells[3].split("/"))
-        except ValueError:
-            continue
+        last = rows[-1]
         out[(int(m.group("n")), m.group("var") or "before")] = {
-            "active": cells[2], "in": tin, "out": tout, "orient": cells[5] if len(cells) > 5 else "-"}
+            "active": last["active"], "in": last["in"], "out": last["out"], "orient": last["orient"]}
     return out
 
 
@@ -725,6 +720,12 @@ def fleet_overview_html(root, work, project_names, weekly=None):
     )
 
 
+def _long_cell(v):
+    n = v.get("long_sessions", 0)
+    share = v.get("long_session_token_share")
+    return "%d" % n if not n or share is None else "%d (%.0f%% of tokens)" % (n, 100 * share)
+
+
 def _weekly_html(weekly, labels):
     """Last 7 UTC days per project, main sessions (see session_data.weekly for the definitions)."""
     if not weekly:
@@ -733,9 +734,16 @@ def _weekly_html(weekly, labels):
     for p, v in weekly.items():
         share = "n/a" if v["cache_hit_share"] is None else "%.1f%%" % (100 * v["cache_hit_share"])
         rows.append([e(labels.get(p, p)), str(v["sessions"]), tok(v["in_out_tokens"]), tok(v["cache_read_tokens"]), share,
-                     "%g" % v["median_session_turns"]])
+                     "%g" % v["median_session_turns"], _long_cell(v)])
+    sessions = sum(v["sessions"] for v in weekly.values())
+    long_n = sum(v.get("long_sessions", 0) for v in weekly.values())
+    total = sum(v["in_out_tokens"] for v in weekly.values())
+    long_tokens = sum(v["in_out_tokens"] * (v.get("long_session_token_share") or 0) for v in weekly.values())
+    fleet = ('<p style="font-size:12px;color:var(--ink-soft);"><b>Sessions longer than %d turns:</b> %d of %d, %s of in + out tokens.</p>'
+             % (session_data.LONG_SESSION_TURNS, long_n, sessions, "n/a" if not total else "%.0f%%" % (100 * long_tokens / total)))
     return ('<h4 style="margin:14px 0 4px">Last 7 days per project</h4>' +
-            _table(["Project", "Sessions", "in + out", "cache read", "cache-hit share", "median turns"], rows, num_cols=(1, 2, 3, 4, 5)) +
+            _table(["Project", "Sessions", "in + out", "cache read", "cache-hit share", "median turns",
+                    "> %d turns" % session_data.LONG_SESSION_TURNS], rows, num_cols=(1, 2, 3, 4, 5, 6)) + fleet +
             '<p style="font-size:11.5px;color:var(--ink-faint);">Main sessions only, UTC days, from the session transcripts. '
             'cache-hit share = cache read / (cache read + input + cache creation). Small samples: a week with one or two sessions per project says little.</p>')
 

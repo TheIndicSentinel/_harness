@@ -29,6 +29,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional
 
 CACHE_VERSION = 1
+LONG_SESSION_TURNS = 300   # "long" session: more than this many API responses in the window
 
 
 def project_for(cwd: Optional[str], root: str, names: List[str]) -> str:
@@ -195,6 +196,8 @@ def weekly(rows: List[dict], today: Optional[datetime.date] = None, days: int = 
       in_out        input + cache creation + output tokens
       cache_hit     cache_read / (cache_read + input + cache creation); None if both are 0
       median_turns  median API responses (distinct message ids) per session within the window
+      long_sessions sessions with more than LONG_SESSION_TURNS turns in the window, and
+      long_session_token_share  their share of the project's in + out tokens (None if no tokens)
     """
     today = today or datetime.datetime.now(datetime.timezone.utc).date()
     window = {(today - datetime.timedelta(days=i)).isoformat() for i in range(days)}
@@ -204,14 +207,20 @@ def weekly(rows: List[dict], today: Optional[datetime.date] = None, days: int = 
         if not sel:
             continue
         per: Dict[str, int] = {}
+        per_tokens: Dict[str, int] = {}
         for r in sel:
             per[r["sid"]] = per.get(r["sid"], 0) + r["msgs"]
+            per_tokens[r["sid"]] = per_tokens.get(r["sid"], 0) + r["tin"] + r["tout"]
         tin = sum(r["tin"] for r in sel)
         tout = sum(r["tout"] for r in sel)
         cr = sum(r["cr"] for r in sel)
+        long_ids = [sid for sid, n in per.items() if n > LONG_SESSION_TURNS]
+        long_tokens = sum(per_tokens[sid] for sid in long_ids)
         out[p] = {"sessions": len(per), "in_out_tokens": tin + tout, "cache_read_tokens": cr,
                   "cache_hit_share": round(cr / (cr + tin), 4) if cr + tin else None,
-                  "median_session_turns": statistics.median(per.values())}
+                  "median_session_turns": statistics.median(per.values()),
+                  "long_sessions": len(long_ids),
+                  "long_session_token_share": round(long_tokens / (tin + tout), 4) if tin + tout else None}
     return out
 
 

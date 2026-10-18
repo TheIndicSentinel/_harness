@@ -121,3 +121,18 @@ class TestAlertDeduplication:
         with open(path, "w") as f:
             _json.dump(data, f)
         assert budget_lib.should_alert(str(git_repo), 50) is True
+
+
+def test_month_total_uses_only_the_latest_row_of_each_session(git_repo):
+    """Rows are cumulative per session: three rows of one session must not add up."""
+    from datetime import datetime, timezone
+    import budget_lib, gate_lib
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    path = gate_lib.cost_log_path(str(git_repo))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        f.write(f"| {today} | aaaa1111 | 1m | 100/100 | 5 | - | - |\n"
+                f"| {today} | aaaa1111 | 2m | 300/200 | 9 | - | - |\n"      # same session, cumulative: replaces the first
+                f"| {today} | bbbb2222 | 1m | 10/10 | 1 | - | - |\n"
+                f"| {today} | cccc3333 | n/a | n/a | n/a | - | - |\n")
+    assert budget_lib.tokens_used_this_month(str(git_repo)) == 500 + 20

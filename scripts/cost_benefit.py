@@ -33,6 +33,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(_HERE, "..", "hooks"))
 sys.path.insert(0, _HERE)
 
+from cost_log_lib import latest_per_session, read_rows  # noqa: E402
 from gate_lib import data_dir  # noqa: E402
 from memory_lib import memory_dir  # noqa: E402
 import context_budget  # noqa: E402
@@ -104,22 +105,16 @@ def injected_context(root: str, names: List[str], harness_root: str) -> dict:
 
 # ---------------------------------------------------------------- 2. orient
 def real_orient_rows() -> List[dict]:
-    """Orient values from real sessions (6+ column rows; legacy rows have none)."""
+    """Orient values from real sessions: the latest row of each session, rows that carry a
+    number (original-format rows have none, and sessions without an edit log '-')."""
     rows = []
     for path in glob.glob(os.path.join(data_dir(), "cost", "*.md")):
         stem = os.path.splitext(os.path.basename(path))[0]
         if stem.startswith("zz-"):          # measurement worktrees and probes, not real work
             continue
-        try:
-            lines = open(path, errors="replace").read().splitlines()
-        except OSError:
-            continue
-        for line in lines:
-            if not line.startswith("| 20"):
-                continue
-            cells = [c.strip() for c in line.strip().strip("|").split("|")]
-            if len(cells) >= 6 and cells[5].isdigit():
-                rows.append({"date": cells[0], "project": stem, "orient": int(cells[5]), "branch": cells[4]})
+        for r in latest_per_session(read_rows(path)):
+            if r["orient"].isdigit():
+                rows.append({"date": r["date"], "project": stem, "orient": int(r["orient"]), "branch": r["branch"]})
     return sorted(rows, key=lambda r: r["date"])
 
 

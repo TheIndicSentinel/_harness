@@ -165,3 +165,29 @@ def test_weekly_window_definitions_and_subagents_excluded():
     assert a["cache_hit_share"] == round(900 / (900 + 200), 4)
     assert a["median_session_turns"] == 4.5                      # sessions of 8 and 1 turns
     assert sd.weekly([_row("g", "s", "2026-10-18", 0, 0, 0, 1)], today)["g"]["cache_hit_share"] is None
+
+
+def test_weekly_counts_long_sessions_and_their_token_share():
+    import datetime
+    today = datetime.date(2026, 10, 18)
+    rows = [_row("alpha", "long1", "2026-10-18", 600, 0, 0, 301),      # 301 turns: long
+            _row("alpha", "edge", "2026-10-18", 100, 0, 0, 300),       # exactly 300: not long
+            _row("alpha", "short", "2026-10-17", 300, 0, 0, 5),
+            _row("beta", "b1", "2026-10-17", 50, 0, 0, 10)]
+    w = sd.weekly(rows, today)
+    assert w["alpha"]["long_sessions"] == 1 and w["alpha"]["long_session_token_share"] == round(600 / 1000, 4)
+    assert w["beta"]["long_sessions"] == 0 and w["beta"]["long_session_token_share"] == 0.0
+    long_session = [_row("alpha", "l", "2026-10-18", 100, 0, 0, 301)]
+    assert sd.weekly(long_session, today)["alpha"]["long_session_token_share"] == 1.0
+
+
+def test_weekly_table_shows_long_sessions():
+    import generate_atlas as ga2
+    weekly = {"alpha": {"sessions": 4, "in_out_tokens": 1000, "cache_read_tokens": 0, "cache_hit_share": 0.5,
+                        "median_session_turns": 10, "long_sessions": 1, "long_session_token_share": 0.6},
+              "beta": {"sessions": 1, "in_out_tokens": 1000, "cache_read_tokens": 0, "cache_hit_share": None,
+                       "median_session_turns": 3, "long_sessions": 0, "long_session_token_share": 0.0}}
+    html_ = ga2._weekly_html(weekly, {})
+    assert "&gt; 300 turns" in html_ or "> 300 turns" in html_
+    assert "1 (60% of tokens)" in html_
+    assert "Sessions longer than 300 turns:</b> 1 of 5, 30% of in + out tokens" in html_

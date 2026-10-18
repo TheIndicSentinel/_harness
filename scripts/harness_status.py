@@ -14,6 +14,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "hooks"))
 from settings_lib import settings_drift  # noqa: E402
 from budget_lib import alert_threshold_crossed, budget_status, is_budget_skipped  # noqa: E402
+from cost_log_lib import latest_per_session, read_rows  # noqa: E402
 from gate_lib import (  # noqa: E402
     RESERVED_KEYS,
     check_passing,
@@ -90,13 +91,7 @@ def session_count(project_root):
     log_path = existing_cost_log(project_root)
     if not log_path:
         return 0
-    count = 0
-    with open(log_path) as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith("|") and not line.startswith("|--") and not line.startswith("| Date"):
-                count += 1
-    return count
+    return len(latest_per_session(read_rows(log_path)))   # one per session, not one per logged row
 
 
 def git_state(project_root):
