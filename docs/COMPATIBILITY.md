@@ -49,7 +49,7 @@ Sources: the costs page (docs/en/costs), the prompt-caching page (docs/en/prompt
 | Compaction guidance | Partly: a plain "preserve" line plus `/compact keep …`. A "Compact Instructions" section is not in the docs, so none is used |
 | One model per session (each model has its own cache) | Done: `model` pinned in the templates; no skill or command sets `model:` |
 | Effort default | Not done: the docs do not say whether the plain `effortLevel` key applies to Sonnet 5.5, and Sonnet 5.5 already defaults to `medium` |
-| Live cache and context visibility | Done in code (status line, `/usage` "Prompt cache" line); not yet seen in a real session |
+| Live cache and context visibility | Done in code (status line, `/usage` "Prompt cache" line). In the VS Code extension neither shows: see "VS Code" below |
 | Avoid mid-session cache breakers (model, MCP, plugins) | Advice only; docs say effort changes keep the cache on Sonnet 5.5 and plugin skills/commands/hooks never invalidate it |
 | Prefer CLI tools over MCP; disable unused MCP servers | Not done; that MCP servers are a major cost lever is unverified here |
 | Hook that filters verbose test output (costs page example) | Option, unmeasured; not applied (it rewrites commands, so it carries risk) |
@@ -58,7 +58,13 @@ Sources: the costs page (docs/en/costs), the prompt-caching page (docs/en/prompt
 | Skill listing size (`skillListingMaxDescChars`, `skillOverrides`, `skillListingBudgetFraction`) | Option, unmeasured; not applied: all unset, listing is about 9k tokens and no benefit from trimming has been measured |
 | Background tokens (`promptSuggestionEnabled`, `idleCompaction`) | Option, unmeasured; left at the defaults (both unset, so both on) |
 | Usage tracking (`/usage`, `/insights`, atlas Work & Tokens) | Done in docs |
+| Auto-compact window (`autoCompactWindow`) | Experiment, unmeasured: set to 200,000 in the user settings only, from 2026-10-18; see `docs/MEASUREMENT.md` |
 
 Audit notes (no changes made):
 - The `security-privacy-auditor` agent runs on `model: opus` while the other two agents use `sonnet`. That is a deliberate choice: the agent runs rarely, its output is safety-critical, and its verdict gates releases, so a missed finding or a false block costs more than the model price. The agent file says the same.
 - MCP tool search defers MCP tools by default, and `claude -p /context` lists connector tools as deferred. A large locally configured MCP server did not connect in four tries, so its behaviour in an interactive session is unverified. An earlier scripted run that restricted `--tools` carried that server's 200-odd tool definitions in the request and about 380k cache-creation tokens; the cause is unexplained and may be an artifact of the restricted `--tools` run (for example the tool-search tool being unavailable), not a property of the server.
+
+## VS Code
+- **The custom status line is not shown in the VS Code extension** (observed by the user, 2026-10-18). `scripts/statusline.py` only helps in the terminal CLI.
+- **The VS Code `/usage` view has no "Prompt cache" line** (observed by the user, 2026-10-18), although the docs describe one.
+- Sources that do work there: `/usage` (session and plan usage, without the cache line), `/context` (what is loaded and the context size), and the atlas "Work & Tokens" view with its last-7-days table (from the transcripts, so it includes VS Code sessions; cache-hit share is computed there from cache-read and input tokens).

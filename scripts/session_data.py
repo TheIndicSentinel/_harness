@@ -198,6 +198,9 @@ def weekly(rows: List[dict], today: Optional[datetime.date] = None, days: int = 
       median_turns  median API responses (distinct message ids) per session within the window
       long_sessions sessions with more than LONG_SESSION_TURNS turns in the window, and
       long_session_token_share  their share of the project's in + out tokens (None if no tokens)
+      max_sessions_per_day / active_days  the most distinct sessions with usage on one UTC day, and the
+                    number of days with any usage: a day-level proxy for sessions run in parallel
+                    (transcript rows carry a day, not a time of day)
     """
     today = today or datetime.datetime.now(datetime.timezone.utc).date()
     window = {(today - datetime.timedelta(days=i)).isoformat() for i in range(days)}
@@ -207,10 +210,12 @@ def weekly(rows: List[dict], today: Optional[datetime.date] = None, days: int = 
         if not sel:
             continue
         per: Dict[str, int] = {}
+        per_day: Dict[str, set] = {}
         per_tokens: Dict[str, int] = {}
         for r in sel:
             per[r["sid"]] = per.get(r["sid"], 0) + r["msgs"]
             per_tokens[r["sid"]] = per_tokens.get(r["sid"], 0) + r["tin"] + r["tout"]
+            per_day.setdefault(r["day"], set()).add(r["sid"])
         tin = sum(r["tin"] for r in sel)
         tout = sum(r["tout"] for r in sel)
         cr = sum(r["cr"] for r in sel)
@@ -220,8 +225,31 @@ def weekly(rows: List[dict], today: Optional[datetime.date] = None, days: int = 
                   "cache_hit_share": round(cr / (cr + tin), 4) if cr + tin else None,
                   "median_session_turns": statistics.median(per.values()),
                   "long_sessions": len(long_ids),
-                  "long_session_token_share": round(long_tokens / (tin + tout), 4) if tin + tout else None}
+                  "long_session_token_share": round(long_tokens / (tin + tout), 4) if tin + tout else None,
+                  "max_sessions_per_day": max(len(v) for v in per_day.values()),
+                  "active_days": len(per_day)}
     return out
+
+
+def weekly_fleet(rows: List[dict], today: Optional[datetime.date] = None, days: int = 7) -> dict:
+    """Fleet-wide numbers for the same window: sessions, the most sessions active on one UTC day,
+    sessions over LONG_SESSION_TURNS and their share of in + out tokens."""
+    today = today or datetime.datetime.now(datetime.timezone.utc).date()
+    window = {(today - datetime.timedelta(days=i)).isoformat() for i in range(days)}
+    sel = [r for r in rows if r["day"] in window and not r["sub"]]
+    turns: Dict[str, int] = {}
+    toks: Dict[str, int] = {}
+    per_day: Dict[str, set] = {}
+    for r in sel:
+        turns[r["sid"]] = turns.get(r["sid"], 0) + r["msgs"]
+        toks[r["sid"]] = toks.get(r["sid"], 0) + r["tin"] + r["tout"]
+        per_day.setdefault(r["day"], set()).add(r["sid"])
+    total = sum(toks.values())
+    long_ids = [s for s, n in turns.items() if n > LONG_SESSION_TURNS]
+    return {"sessions": len(turns), "in_out_tokens": total,
+            "max_sessions_per_day": max((len(v) for v in per_day.values()), default=0),
+            "long_sessions": len(long_ids),
+            "long_session_token_share": round(sum(toks[s] for s in long_ids) / total, 4) if total else None}
 
 
 def main(argv: List[str]) -> int:
@@ -238,7 +266,7 @@ def main(argv: List[str]) -> int:
         today = datetime.datetime.now(datetime.timezone.utc).date()
         doc = {"schema": 1, "kind": os.path.splitext(os.path.basename(argv[1]))[0], "recorded": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                "window_utc_days": [(today - datetime.timedelta(days=6)).isoformat(), today.isoformat()],
-               "source": "session transcripts via session_data.scan (same as the atlas); no prompt text", "projects": weekly(rows, today)}
+               "source": "session transcripts via session_data.scan (same as the atlas); no prompt text", "projects": weekly(rows, today), "fleet": weekly_fleet(rows, today)}
         with open(argv[1], "w") as f:
             json.dump(doc, f, indent=1)
             f.write("\n")

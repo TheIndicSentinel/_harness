@@ -191,3 +191,15 @@ def test_weekly_table_shows_long_sessions():
     assert "&gt; 300 turns" in html_ or "> 300 turns" in html_
     assert "1 (60% of tokens)" in html_
     assert "Sessions longer than 300 turns:</b> 1 of 5, 30% of in + out tokens" in html_
+
+
+def test_weekly_parallel_session_proxy_and_fleet():
+    import datetime
+    today = datetime.date(2026, 10, 18)
+    rows = [_row("alpha", "a1", "2026-10-18", 10, 0, 0, 5), _row("alpha", "a2", "2026-10-18", 10, 0, 0, 5),
+            _row("alpha", "a3", "2026-10-17", 10, 0, 0, 5), _row("beta", "b1", "2026-10-18", 10, 0, 0, 400)]
+    w = sd.weekly(rows, today)
+    assert w["alpha"]["max_sessions_per_day"] == 2 and w["alpha"]["active_days"] == 2
+    f = sd.weekly_fleet(rows, today)
+    assert f["sessions"] == 4 and f["max_sessions_per_day"] == 3 and f["long_sessions"] == 1
+    assert f["long_session_token_share"] == round(10 / 40, 4)
