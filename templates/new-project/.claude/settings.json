@@ -1,6 +1,5 @@
 {
   "model": "sonnet",
-  "effortLevel": "medium",
   "permissions": {
     "deny": [
       "Read(**/*.pem)", "Read(**/id_rsa*)", "Read(**/*_rsa)", "Read(**/*.p12)",

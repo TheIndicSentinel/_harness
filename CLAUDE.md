@@ -24,6 +24,8 @@ Ship-shaped commands and deploy/publish MCP tools are blocked unless every requi
 - Be specific: name the file, function or failing test and the outcome you expect; vague asks cost exploration.
 - Show test/lint output before calling work done.
 - `/clear` between unrelated tasks; a fresh session with `CLAUDE.md` and memory is cheaper than a long one.
+- After a long idle gap, start fresh (`/clear` plus the handoff) instead of resuming: a resumed session reprocesses its whole context uncached.
+- `/rewind` to drop a failed path instead of compacting it.
 
 ## More
 Skill-by-phase map, gate details, adopting existing projects: `docs/LIFECYCLE.md` in the harness root (`$CLAUDE_PLUGIN_ROOT` or `~/Documents/Projects/_harness`) — read only when needed.

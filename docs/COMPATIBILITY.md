@@ -37,3 +37,26 @@ Claude Code changes quickly and parts of what this harness touches are not a sta
 
 ## Behaviour checks
 - **SessionEnd when a VS Code panel is closed: UNVERIFIED (2026-10-18).** `SessionEnd` fires for `claude -p` sessions (the cost-log rows written for scripted runs show it). For VS Code, a transcript scan found 9 recent real-project sessions started from the VS Code extension and no cost-log row for any of them, but no real-project session of any kind has a row (the one CLI and one SDK session do not either), so the scan cannot tell "did not fire" from "fired but wrote nothing". A closing test needs a person: in a throw-away folder under the projects root, start a session in the VS Code panel, make one edit, close the panel, and look for a new row in `~/.claude/harness/cost/<folder>.md`. Until then, the cost log is best-effort and the atlas reads transcripts instead.
+
+## Anthropic practices coverage (2026-10-18)
+Sources: the costs page (docs/en/costs), the prompt-caching page (docs/en/prompt-caching) and the settings reference (docs/en/settings-reference). "Done" means a file in this repo or the umbrella does it; "advice only" means it is a line of guidance, not enforced.
+
+| Practice | Status |
+|---|---|
+| Small CLAUDE.md, workflows in skills | Done |
+| `/clear` between tasks, specific prompts, show test output | Done (umbrella lines) |
+| Fresh start instead of resuming after a long idle gap; `/rewind` instead of compacting a failed path | Done (two umbrella lines, advice only) |
+| Compaction guidance | Partly: a plain "preserve" line plus `/compact keep …`. A "Compact Instructions" section is not in the docs, so none is used |
+| One model per session (each model has its own cache) | Done: `model` pinned in the templates; no skill or command sets `model:` |
+| Effort default | Not done: the docs do not say whether the plain `effortLevel` key applies to Sonnet 5.5, and Sonnet 5.5 already defaults to `medium` |
+| Live cache and context visibility | Done in code (status line, `/usage` "Prompt cache" line); not yet seen in a real session |
+| Avoid mid-session cache breakers (model, MCP, plugins) | Advice only; docs say effort changes keep the cache on Sonnet 5.5 and plugin skills/commands/hooks never invalidate it |
+| Prefer CLI tools over MCP; disable unused MCP servers | Not done |
+| Hook that filters verbose test output (costs page example) | Not done |
+| Code-intelligence plugins | Not done: `rust-analyzer-lsp` (binary present) and `kotlin-lsp` (binary missing) exist in the official marketplace |
+| Delegate verbose work to subagents | Not done |
+| Skill listing size (`skillListingMaxDescChars`, `skillOverrides`, `skillListingBudgetFraction`) | Not done: all unset, listing is about 9k tokens |
+| Background tokens (`promptSuggestionEnabled`, `idleCompaction`) | Reviewed, not changed: both unset, so both default to on |
+| Usage tracking (`/usage`, `/insights`, atlas Work & Tokens) | Done in docs |
+
+Audit notes (no changes made): the `security-privacy-auditor` agent runs on `model: opus` while the other two agents use `sonnet`; MCP tool search defers MCP tools by default, and `claude -p /context` lists connector tools as deferred, but a large locally configured MCP server did not connect in four tries, so its behaviour in an interactive session is unverified (an earlier scripted run that restricted `--tools` sent that server's 200-odd tool definitions upfront, possibly because the tool-search tool was not available there).

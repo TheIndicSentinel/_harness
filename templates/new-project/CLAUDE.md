@@ -25,7 +25,7 @@
 ## Working notes
 - Show test/lint output before calling work done.
 - When compacting, preserve: changed files, test commands, open decisions (or run `/compact keep <these>`).
-- Model and effort defaults live in `.claude/settings.json` (`model`, `effortLevel`); change them there, not mid-task.
+- The default model lives in `.claude/settings.json` (`model`); change it there, not mid-task (each model has its own prompt cache).
 
 ---
 
