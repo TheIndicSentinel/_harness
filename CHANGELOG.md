@@ -3,6 +3,13 @@
 Keep-a-Changelog style. Versions follow `.claude-plugin/plugin.json`.
 
 ## [Unreleased]
+### Added
+- **Status line** `scripts/statusline.py` (stdlib only, no files or network): `ctx 23% · cache 97% · $0.42 · Sonnet 5.5`, built from the documented status-line JSON; missing or null fields are omitted, any error prints nothing. Wired in the shared `settings.json` template and the user's live settings (none existed). Median start-up on the dev machine is about 80 ms, of which about 65 ms is the Python interpreter itself.
+- **Atlas "Last 7 days per project"** table on the root node (sessions, in + out, cache read, cache-hit share) from `session_data.weekly`; `python3 scripts/session_data.py --weekly OUT.json` writes the same table as JSON, used for before/after comparisons.
+- Three umbrella `CLAUDE.md` lines: be specific in prompts, show test output, `/clear` between unrelated tasks (the compaction line was already there). Always-loaded cost: +95 tokens measured with `/context` (umbrella `CLAUDE.md` 865 to 960; the file-size estimate says +67, 2,187 to 2,254, inside the 2,400 ceiling).
+- New-project and adopt templates: `model` and `effortLevel` defaults in `.claude/settings.json` and a compaction/verification "Working notes" block in the template `CLAUDE.md`. Existing projects are not touched.
+### Changed
+- Docs: Work & Tokens (transcripts) is the primary monitoring source; the cost log and budget alerts are labelled best-effort; `/usage`, `/insights` and the status line are the live checks. Whether SessionEnd fires on closing a VS Code panel is recorded as unverified in `docs/COMPATIBILITY.md`.
 
 ## [0.6.0] — 2026-10-17
 ### Repository

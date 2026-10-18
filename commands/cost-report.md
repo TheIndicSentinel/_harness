@@ -3,7 +3,7 @@ description: Roll up session/token logs across all projects under ~/Documents/Pr
 disable-model-invocation: true
 ---
 
-Build a rollup report from the harness's session logs:
+Build a rollup report from the harness's session logs. Note to the user that this log is best-effort (it depends on the SessionEnd hook firing, so it can miss sessions); the atlas "Work & Tokens" view reads the transcripts directly and is the primary source. Steps:
 
 1. List every directory under `~/Documents/Projects/` except `_harness` itself.
 2. For each one, read its log at `~/.claude/harness/cost/<project>.md` (or `$CLAUDE_HARNESS_DATA_DIR/cost/`); if that doesn't exist but a legacy `docs/COST_LOG.md` does, read that and say it hasn't been migrated. Extract the table rows (date, session id, active time, est. tokens).

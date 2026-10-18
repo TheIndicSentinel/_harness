@@ -52,9 +52,15 @@ A stale pass (from before newer commits) doesn't count, and neither does a dirty
 
 This local hook is a fast nudge, not a trust boundary — it only sees actions taken *through Claude Code*, and it's self-attested (nothing stops a hand-written `"status": "pass"` from satisfying it). For projects releasing via GitHub Actions, `templates/new-project/.github/workflows/harness-gate-check.yml` adds a real CI-side check on the same gate records, and required-status-check branch protection makes that check unskippable even for a solo maintainer; see [`docs/CI_GATE_CHECK.md`](docs/CI_GATE_CHECK.md) for the convention, the wiring, and the honest limits of self-attestation.
 
-## Token budgets (optional)
+## Monitoring: where to look
 
-`python3 hooks/budget_write.py <project_root> <monthly_token_budget>` sets a best-effort monthly token budget per project, computed from the per-project cost log (`~/.claude/harness/cost/`). `/harness-status` always shows the current live percentage; a SessionStart alert fires once per threshold crossed (50/80/100%) per calendar month, not every session after crossing — it's a nudge, not a spend-prevention mechanism (nothing can stop a session mid-flight, and this doesn't see API/subscription/Claude.ai usage at all). Same caveat as the rest of `COST_LOG.md`: an estimate, not authoritative billing — see [`docs/OTEL.md`](docs/OTEL.md) for the full source ranking. If you'd rather not bother with a budget, say so explicitly: `budget_write.py <project_root> --skip` — `/harness-status` then reports "intentionally skipped" instead of leaving it looking like an oversight.
+- **Primary: the atlas "Work & Tokens"** (`/harness-atlas` or `harness-ui`). It reads Claude Code's own session transcripts, so it covers every past session, splits work by git branch, keeps subagents separate, and has a "Last 7 days per project" table (sessions, in + out, cache read, cache-hit share). No prompt text is read.
+- **Live, in the session:** the status line (`scripts/statusline.py`: context %, prompt-cache hit %, session cost, model), and Claude Code's own `/usage` and `/insights`. Setup: [`docs/LOCAL_INSTALL.md`](docs/LOCAL_INSTALL.md).
+- **Best-effort only: the cost log** (`~/.claude/harness/cost/`, written by the SessionEnd hook). It also feeds `/cost-report` and the budget alerts below. Whether SessionEnd fires when a VS Code panel is closed is unverified (see [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md)), so treat a missing row as "unknown", not "no session".
+
+## Token budgets (optional, built on the best-effort cost log)
+
+`python3 hooks/budget_write.py <project_root> <monthly_token_budget>` sets a best-effort monthly token budget per project, computed from the per-project cost log (`~/.claude/harness/cost/`), so it is only as complete as that log. `/harness-status` always shows the current live percentage; a SessionStart alert fires once per threshold crossed (50/80/100%) per calendar month, not every session after crossing — it's a nudge, not a spend-prevention mechanism (nothing can stop a session mid-flight, and this doesn't see API/subscription/Claude.ai usage at all). Same caveat as the rest of `COST_LOG.md`: an estimate, not authoritative billing — see [`docs/OTEL.md`](docs/OTEL.md) for the full source ranking. If you'd rather not bother with a budget, say so explicitly: `budget_write.py <project_root> --skip` — `/harness-status` then reports "intentionally skipped" instead of leaving it looking like an oversight.
 
 ## Custom release commands (optional)
 

@@ -22,6 +22,11 @@
 # fill in: build, test, lint, run
 ```
 
+## Working notes
+- Show test/lint output before calling work done.
+- When compacting, preserve: changed files, test commands, open decisions (or run `/compact keep <these>`).
+- Model and effort defaults live in `.claude/settings.json` (`model`, `effortLevel`); change them there, not mid-task.
+
 ---
 
 ## What's in scope

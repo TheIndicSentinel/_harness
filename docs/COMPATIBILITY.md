@@ -10,6 +10,7 @@ Claude Code changes quickly and parts of what this harness touches are not a sta
 | Plugin manifest + `hooks/hooks.json`, `${CLAUDE_PLUGIN_ROOT}` | plugin install | documented |
 | Skill/command frontmatter: `name`, `description`, `argument-hint`, `disable-model-invocation` | skills, commands | documented |
 | Native memory dir `~/.claude/projects/<non-alphanumerics → ->/memory/` and `MEMORY.md` | memory lint, SessionStart line, `/wrap-up` | directory convention observed, **not a documented contract** |
+| Status line JSON on stdin (`context_window.used_percentage`, `prompt_cache.hit_ratio`, `cost.total_cost_usd`, `model.display_name`) | `scripts/statusline.py` | documented (https://code.claude.com/docs/en/statusline); `prompt_cache` needs Claude Code >= 2.1.251 and is omitted when absent; `used_percentage` and `hit_ratio` can be null |
 | Session transcript JSONL (`message.usage`, timestamps) | cost log | **undocumented**; best-effort. If it breaks, switch to OpenTelemetry (`docs/OTEL.md`) rather than patch the parser |
 
 ## How drift is caught
@@ -33,3 +34,6 @@ Claude Code changes quickly and parts of what this harness touches are not a sta
   - Deliberately **not** on `secrets_guard.py`: a crash there would lock out Read/Edit/Grep, which is the recovery path. Documented as no effect on `Stop` hooks, so not on `verify_before_stop.py` either.
   - Trade-off accepted: if `python3` itself is missing, every Bash call is blocked until the hook is fixed or removed from settings (Edit is not matched, so Claude can still repair `settings.json`).
 - **Launcher caveat:** `claude update` installs new versions under `~/.local/share/claude/versions/`. If `~/.local/bin/claude` is a copied binary rather than a symlink into that directory, it keeps running the old version; `claude --version` after updating tells you which you're on.
+
+## Behaviour checks
+- **SessionEnd when a VS Code panel is closed: UNVERIFIED (2026-10-18).** `SessionEnd` fires for `claude -p` sessions (the cost-log rows written for scripted runs show it). For VS Code, a transcript scan found 9 recent real-project sessions started from the VS Code extension and no cost-log row for any of them, but no real-project session of any kind has a row (the one CLI and one SDK session do not either), so the scan cannot tell "did not fire" from "fired but wrote nothing". A closing test needs a person: in a throw-away folder under the projects root, start a session in the VS Code panel, make one edit, close the panel, and look for a new row in `~/.claude/harness/cost/<folder>.md`. Until then, the cost log is best-effort and the atlas reads transcripts instead.

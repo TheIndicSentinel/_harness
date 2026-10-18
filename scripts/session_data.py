@@ -19,9 +19,12 @@ undocumented, so this is best-effort like the rest of the harness's accounting.
 Per-file results are cached outside any repo (gate_lib.data_dir()/cache/) keyed
 by size and mtime, so a regeneration re-reads only transcripts that changed.
 """
+import datetime
 import glob
 import json
 import os
+import statistics
+import sys
 from collections import defaultdict
 from typing import Dict, List, Optional
 
@@ -185,6 +188,57 @@ def summarize(rows: List[dict]) -> dict:
     return projects
 
 
+def weekly(rows: List[dict], today: Optional[datetime.date] = None, days: int = 7) -> dict:
+    """Last `days` UTC days (including today) per project, main sessions only (subagents are
+    reported separately by summarize). Definitions:
+      sessions      distinct main-session transcripts with usage in the window
+      in_out        input + cache creation + output tokens
+      cache_hit     cache_read / (cache_read + input + cache creation); None if both are 0
+      median_turns  median API responses (distinct message ids) per session within the window
+    """
+    today = today or datetime.datetime.now(datetime.timezone.utc).date()
+    window = {(today - datetime.timedelta(days=i)).isoformat() for i in range(days)}
+    out: Dict[str, dict] = {}
+    for p in sorted({r["project"] for r in rows}):
+        sel = [r for r in rows if r["project"] == p and r["day"] in window and not r["sub"]]
+        if not sel:
+            continue
+        per: Dict[str, int] = {}
+        for r in sel:
+            per[r["sid"]] = per.get(r["sid"], 0) + r["msgs"]
+        tin = sum(r["tin"] for r in sel)
+        tout = sum(r["tout"] for r in sel)
+        cr = sum(r["cr"] for r in sel)
+        out[p] = {"sessions": len(per), "in_out_tokens": tin + tout, "cache_read_tokens": cr,
+                  "cache_hit_share": round(cr / (cr + tin), 4) if cr + tin else None,
+                  "median_session_turns": statistics.median(per.values())}
+    return out
+
+
+def main(argv: List[str]) -> int:
+    """session_data.py --weekly OUTPUT.json: write the last-7-days table (same transcript source as the atlas)."""
+    if len(argv) == 2 and argv[0] == "--weekly":
+        here = os.path.dirname(os.path.abspath(__file__))
+        sys.path.insert(0, os.path.join(here, "..", "hooks"))
+        sys.path.insert(0, here)
+        from gate_lib import data_dir, projects_root
+        from memory_lib import claude_home
+        import generate_atlas
+        root = projects_root()
+        rows = scan(claude_home(), root, generate_atlas.list_project_names(root), os.path.join(data_dir(), "cache", "sessions.json"))
+        today = datetime.datetime.now(datetime.timezone.utc).date()
+        doc = {"schema": 1, "kind": os.path.splitext(os.path.basename(argv[1]))[0], "recorded": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+               "window_utc_days": [(today - datetime.timedelta(days=6)).isoformat(), today.isoformat()],
+               "source": "session transcripts via session_data.scan (same as the atlas); no prompt text", "projects": weekly(rows, today)}
+        with open(argv[1], "w") as f:
+            json.dump(doc, f, indent=1)
+            f.write("\n")
+        print(argv[1])
+        return 0
+    print("usage: session_data.py --weekly OUTPUT.json", file=sys.stderr)
+    return 2
+
+
 def fmt(n: int) -> str:
     """Compact token count: 1,234 -> 1.2k, 1,234,567 -> 1.23M."""
     n = int(n)
@@ -195,3 +249,7 @@ def fmt(n: int) -> str:
     if n >= 1000:
         return "%.1fk" % (n / 1000)
     return str(n)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

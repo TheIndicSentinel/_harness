@@ -21,6 +21,9 @@ Ship-shaped commands and deploy/publish MCP tools are blocked unless every requi
 - Durable decisions and non-obvious gotchas go to memory (via `/wrap-up`); routine output goes in `docs/`.
 - When compacting, preserve: modified files, test/lint commands, gate status, open decisions.
 - Don't switch models or toggle MCP servers mid-task (invalidates the prompt cache).
+- Be specific: name the file, function or failing test and the outcome you expect; vague asks cost exploration.
+- Show test/lint output before calling work done.
+- `/clear` between unrelated tasks; a fresh session with `CLAUDE.md` and memory is cheaper than a long one.
 
 ## More
 Skill-by-phase map, gate details, adopting existing projects: `docs/LIFECYCLE.md` in the harness root (`$CLAUDE_PLUGIN_ROOT` or `~/Documents/Projects/_harness`) — read only when needed.

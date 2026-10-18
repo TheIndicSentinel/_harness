@@ -700,7 +700,7 @@ def cost_benefit_panel(root, project_names, work, snapshot):
 
 
 
-def fleet_overview_html(root, work, project_names):
+def fleet_overview_html(root, work, project_names, weekly=None):
     """Root-node view: tokens per project, one table."""
     order = list(project_names) + ["harness", "baseline", "other"]
     labels = {"harness": "_harness (the tool itself)", "baseline": "baseline pilot worktrees", "other": "other / removed projects"}
@@ -721,8 +721,23 @@ def fleet_overview_html(root, work, project_names):
         '<div class="fields"><div class="field"><span class="fl">Projects</span><p>%d project(s) under %s, plus _harness itself.</p></div></div>' % (len(project_names), e(root)) +
         '<h4 style="margin:12px 0 4px">Tokens by project</h4>' +
         _table(["Project", "Tasks", "Sessions", "in", "out", "cache read", "Subagents", "Dates"], rows, num_cols=(1, 2, 3, 4, 5, 6)) +
-        TOKEN_NOTE
+        TOKEN_NOTE + _weekly_html(weekly, labels)
     )
+
+
+def _weekly_html(weekly, labels):
+    """Last 7 UTC days per project, main sessions (see session_data.weekly for the definitions)."""
+    if not weekly:
+        return ""
+    rows = []
+    for p, v in weekly.items():
+        share = "n/a" if v["cache_hit_share"] is None else "%.1f%%" % (100 * v["cache_hit_share"])
+        rows.append([e(labels.get(p, p)), str(v["sessions"]), tok(v["in_out_tokens"]), tok(v["cache_read_tokens"]), share,
+                     "%g" % v["median_session_turns"]])
+    return ('<h4 style="margin:14px 0 4px">Last 7 days per project</h4>' +
+            _table(["Project", "Sessions", "in + out", "cache read", "cache-hit share", "median turns"], rows, num_cols=(1, 2, 3, 4, 5)) +
+            '<p style="font-size:11.5px;color:var(--ink-faint);">Main sessions only, UTC days, from the session transcripts. '
+            'cache-hit share = cache read / (cache read + input + cache creation). Small samples: a week with one or two sessions per project says little.</p>')
 
 
 def load_engine():
@@ -751,8 +766,9 @@ def generate(output_path=None, focus_cwd=None, refresh_context=False):
     focus_root = project_root_for(focus_cwd or os.getcwd())
 
     project_names = list_project_names(root)
-    work = session_data.summarize(session_data.scan(
-        claude_home(), root, project_names, os.path.join(data_dir(), "cache", "sessions.json")))
+    rows_all = session_data.scan(claude_home(), root, project_names, os.path.join(data_dir(), "cache", "sessions.json"))
+    work = session_data.summarize(rows_all)
+    weekly = session_data.weekly(rows_all)
 
     projects, all_cats, all_leaves, all_detail = [], {}, {}, {}
     for name in project_names:
@@ -772,7 +788,7 @@ def generate(output_path=None, focus_cwd=None, refresh_context=False):
 
     all_detail["root"] = {
         "title": "THE HARNESS", "sub": "Live fleet overview — generated %s" % NOW,
-        "html": fleet_overview_html(root, work, project_names),
+        "html": fleet_overview_html(root, work, project_names, weekly),
         "related": [{"id": COST_BENEFIT_ID, "label": COST_BENEFIT_TITLE}],
         "source": {"file": "projects_root()", "trust": "local record", "generated": NOW},
     }

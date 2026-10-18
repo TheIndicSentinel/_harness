@@ -141,3 +141,27 @@ class TestAtlasPage:
         monkeypatch.setattr(ga.sys, "argv", ["generate_atlas.py", str(out)])
         ga.main()
         assert len(opened) == 1             # without --open nothing is opened
+
+
+def _row(project, sid, day, tin, tout, cr, msgs, sub=False):
+    return {"project": project, "branch": "b", "day": day, "sid": sid, "sub": sub, "tin": tin, "tout": tout, "cr": cr, "msgs": msgs}
+
+
+def test_weekly_window_definitions_and_subagents_excluded():
+    import datetime
+    today = datetime.date(2026, 10, 18)
+    rows = [
+        _row("alpha", "s1", "2026-10-18", 100, 10, 900, 5),
+        _row("alpha", "s1", "2026-10-12", 100, 10, 0, 3),         # day 7 back: inside (today + 6 earlier days)
+        _row("alpha", "s1", "2026-10-11", 999, 999, 999, 99),     # outside the window
+        _row("alpha", "s2", "2026-10-17", 0, 0, 0, 1),
+        _row("alpha", "s3", "2026-10-17", 5000, 5000, 5000, 50, sub=True),   # subagent: not counted here
+        _row("beta", "s4", "2026-10-01", 1, 1, 1, 1),            # nothing in the window: project absent
+    ]
+    w = sd.weekly(rows, today)
+    assert set(w) == {"alpha"}
+    a = w["alpha"]
+    assert a["sessions"] == 2 and a["in_out_tokens"] == 220 and a["cache_read_tokens"] == 900
+    assert a["cache_hit_share"] == round(900 / (900 + 200), 4)
+    assert a["median_session_turns"] == 4.5                      # sessions of 8 and 1 turns
+    assert sd.weekly([_row("g", "s", "2026-10-18", 0, 0, 0, 1)], today)["g"]["cache_hit_share"] is None

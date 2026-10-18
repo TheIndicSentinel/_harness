@@ -167,3 +167,12 @@ def test_no_gate_round_history_or_savings_narrative_claimed(git_repo, tmp_path):
     for entry in detail.values():
         assert "savings-block" not in entry.get("html", "")
     assert "Features Worked On" not in script
+
+
+def test_weekly_table_is_in_the_fleet_overview():
+    import generate_atlas as ga
+    weekly = {"alpha": {"sessions": 2, "in_out_tokens": 220, "cache_read_tokens": 900, "cache_hit_share": 0.8182, "median_session_turns": 4.5},
+              "beta": {"sessions": 1, "in_out_tokens": 5, "cache_read_tokens": 0, "cache_hit_share": None, "median_session_turns": 1}}
+    html_ = ga._weekly_html(weekly, {})
+    assert "Last 7 days per project" in html_ and "81.8%" in html_ and "n/a" in html_ and "4.5" in html_
+    assert ga._weekly_html({}, {}) == ""
