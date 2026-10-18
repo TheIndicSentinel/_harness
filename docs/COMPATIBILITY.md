@@ -51,12 +51,14 @@ Sources: the costs page (docs/en/costs), the prompt-caching page (docs/en/prompt
 | Effort default | Not done: the docs do not say whether the plain `effortLevel` key applies to Sonnet 5.5, and Sonnet 5.5 already defaults to `medium` |
 | Live cache and context visibility | Done in code (status line, `/usage` "Prompt cache" line); not yet seen in a real session |
 | Avoid mid-session cache breakers (model, MCP, plugins) | Advice only; docs say effort changes keep the cache on Sonnet 5.5 and plugin skills/commands/hooks never invalidate it |
-| Prefer CLI tools over MCP; disable unused MCP servers | Not done |
-| Hook that filters verbose test output (costs page example) | Not done |
-| Code-intelligence plugins | Not done: `rust-analyzer-lsp` (binary present) and `kotlin-lsp` (binary missing) exist in the official marketplace |
+| Prefer CLI tools over MCP; disable unused MCP servers | Not done; that MCP servers are a major cost lever is unverified here |
+| Hook that filters verbose test output (costs page example) | Option, unmeasured; not applied (it rewrites commands, so it carries risk) |
+| Code-intelligence plugins | Option, unmeasured; not applied: `rust-analyzer-lsp` (binary present) and `kotlin-lsp` (binary missing) exist in the official marketplace |
 | Delegate verbose work to subagents | Not done |
-| Skill listing size (`skillListingMaxDescChars`, `skillOverrides`, `skillListingBudgetFraction`) | Not done: all unset, listing is about 9k tokens |
-| Background tokens (`promptSuggestionEnabled`, `idleCompaction`) | Reviewed, not changed: both unset, so both default to on |
+| Skill listing size (`skillListingMaxDescChars`, `skillOverrides`, `skillListingBudgetFraction`) | Option, unmeasured; not applied: all unset, listing is about 9k tokens and no benefit from trimming has been measured |
+| Background tokens (`promptSuggestionEnabled`, `idleCompaction`) | Option, unmeasured; left at the defaults (both unset, so both on) |
 | Usage tracking (`/usage`, `/insights`, atlas Work & Tokens) | Done in docs |
 
-Audit notes (no changes made): the `security-privacy-auditor` agent runs on `model: opus` while the other two agents use `sonnet`; MCP tool search defers MCP tools by default, and `claude -p /context` lists connector tools as deferred, but a large locally configured MCP server did not connect in four tries, so its behaviour in an interactive session is unverified (an earlier scripted run that restricted `--tools` sent that server's 200-odd tool definitions upfront, possibly because the tool-search tool was not available there).
+Audit notes (no changes made):
+- The `security-privacy-auditor` agent runs on `model: opus` while the other two agents use `sonnet`. That is a deliberate choice: the agent runs rarely, its output is safety-critical, and its verdict gates releases, so a missed finding or a false block costs more than the model price. The agent file says the same.
+- MCP tool search defers MCP tools by default, and `claude -p /context` lists connector tools as deferred. A large locally configured MCP server did not connect in four tries, so its behaviour in an interactive session is unverified. An earlier scripted run that restricted `--tools` carried that server's 200-odd tool definitions in the request and about 380k cache-creation tokens; the cause is unexplained and may be an artifact of the restricted `--tools` run (for example the tool-search tool being unavailable), not a property of the server.
